@@ -24,3 +24,78 @@ testIt = runTestTT tests
 -- Loesung mit Fold
 reverseFold :: [a] -> [a]
 reverseFold l = foldl (flip (:)) [] l
+
+-- Aufgabe 2
+-- gegeben sei folgende Funktion
+cross :: [a] -> [b] -> [(a,b)]
+cross l1 l2 = [ (x,y) | x <- l1, y <- l2 ]
+
+{- cross [1,2] [3,4] = [(1,3), (1,4), (2,3), (2,4)] -}
+
+-- Loesung ohne List comprehension
+cross' :: [a] -> [b] -> [(a,b)]
+
+
+-- Aufgabe 3
+
+takeWhile           :: (a -> Bool) -> [a] -> [a]
+takeWhile p []       = []
+takeWhile p (x:xs)
+         | p x       = x : takeWhile p xs
+         | otherwise = []
+ 
+	
+dropWhile           :: (a -> Bool) -> [a] -> [a]
+dropWhile p []       = []
+dropWhile p xs@(x:xs')
+         | p x       = dropWhile p xs'
+         | otherwise = xs
+
+-- Zeigen Sie, dass fuer alle Praedikate p und alle Listen xs gilt
+-- takeWhile p xs ++ dropWhile p xs = xs
+
+-- Durch Vollständige Induktion
+-- Induktionsverankerung
+{-
+  takeWhile p [] ++ dropWhile p []
+  {- Def. takeWhile -}
+= [] ++ dropWhile p []
+  {- Def. dropWhile -}
+= [] ++ []
+= []
+-}
+
+-- Induktionsschritt
+{-
+  takeWhile p x:xs ++ dropWhile p x:xs 
+  {- Def. takeWhile u. dropWhile -}
+
+  {- Fallunterscheidung: fuer p x == True -}
+= x : takeWhile p xs ++ dropWhile p xs
+= x : (takeWhile p xs ++ dropWhile p xs)
+  {- Induktionsverankerung takeWhile p xs ++ dropWhile p xs = xs -}
+= x : xs
+q.e.d. Teil 1
+
+  {- Fallunterscheidung p x == False -}
+= [] ++ x:xs
+= x:xs
+q.e.d. Teil 2
+-}
+
+
+-- span
+span :: (a -> Bool) -> [a] -> ([a], [a])
+span p xs = (takeWhile p xs, dropWhile p xs)
+
+-- Loesung, die die Liste nur einmal abarbeitet
+span :: (a -> Bool) -> [a] -> ([a], [a])
+span p xs = takedropWhile p [] xs
+  where 
+    takedropWhile :: (a -> Bool) -> [a] -> [a] -> ([a], [a])
+    takedropWhile p xs y:ys
+        | p y = takedropWhile (xs ++ y) ys
+        | otherwise (xs, y:ys)
+
+
+
