@@ -12,26 +12,41 @@ reverse (x : xs) = reverse xs ++ [x]
 Verankerung
   reverse (reverse [x])
     {- Def. reverse innen -}
-= reverse (reverse [] ++ [x])
+= reverse (reverse ([] ++ [x]))
     {- Def. reverse -}
-= reverse ([] ++ [x])
-= reverse [x]
-	{- Def. reverse -}
+= reverse ([x] ++ reverse [])
+= reverse ([x] ++ [])
 = reverse [] ++ [x]
 = [] ++ [x]
 = [x]
 
 Wir nehmen an, dass "reverse (reverse xs) = xs" gilt, wir folgern also x:xs (als n+1. schritt)
   reverse (reverse (x:xs))
+  {- Def. reverse innen -}
 = reverse (reverse xs ++ [x])
-= reverse (reverse y:ys ++ [x])
-= reverse (reverse ys ++ [y] ++ [x])
+  {- Lemma: reverse (xs ++ [x]) = x : reverse xs -}
+= x : reverse . reverse xs
+  {- reverse . reverse xs = xs gilt (siehe Verankerung -}
+= x : xs
 
-= reverse (x : reverse xs)
-    {- Def. reverse -}
-= reverse (reverse xs) ++ [x]
-    {- Einsetzen von "reverse (reverse xs) == xs" -}
-= xs ++ [x]
+=> Jetzt müssen wir noch zeigen dass "reverse (xs ++ [x]) = x : reverse xs gilt"
+Verankerung:
+  reverse ([] ++ [x])
+= reverse ([x])
+= x
+
+Induktion. Wir nehmen an, dass reverse (xs ++ [x]) = x:reverse xs gilt
+Induktionsschritt:
+  reverse (y:xs ++ [x])
+  {- Def. ++ -}
+= reverse (y:(xs ++ [x]))
+  {- Def. reverse -}
+= reverse (xs ++ [x]) ++ [y]
+  {- Induktionssatz -}
+= x : reverse (xs) ++ [y]
+  {- Def. reverse -}
+= x : reverse (y:xs)
+q.e.d.
 
 
 
@@ -42,25 +57,27 @@ length (xs ++ ys) = length xs + length ys
 
 length :: [a] -> Int
 length [] = 0
-length (_:xs) = 1 + length xs
+length (x:xs) = 1 + length xs
 
-Verankerung mit [x] und [y]
+Verankerung mit [x] ++ [y]
 
   length ([x] ++ [y])
-= length ([x,y])
-= 1 + length [y]
-= 1 + 1 + length []
-= 1 + 1 + 0
-= 2
-
+= 1 + length ([y])
 = length [x] + length [y]
-= 1 + length [] + 1 + length []
-= 1 + 0 + 1 + 0
-= 2
 
-Induktion für (x:xs) und (y:ys) mit length (xs ++ ys) == length xs + length ys
-= length (x:xs ++ y:ys)
-= 1 + length
+Induktionssatz: Wir nehmen an, dass "length (xs ++ ys) = length xs + length ys " gilt. Nun für "length (x:xs ++ ys)"
+  length (x:xs ++ ys)
+= length (x:(xs ++ ys))
+  {- Def. length -}
+= 1 + length (xs ++ ys)
+  {- Einsetzen der Verankerung -}
+= 1 + length xs + length ys
+  {- length x entspricht 1, also kann hier length x eingesetzt werden -}
+= length x + length xs + length ys
+  {- Def. length -}
+= length (x:xs) + length ys
+q.e.d.
+
 
 
 
