@@ -146,3 +146,10 @@ imax2 f lower upper = foldl (\acc e -> if snd e > snd acc then e else acc) (0,0)
   where
   mapWithPos pos f [x] = [(pos, f x)]
   mapWithPos pos f (x:xs) = (pos, f x):(mapWithPos (pos+1) f xs)
+
+
+qsort :: Ord a => [a] -> [a]
+qsort [] = []
+qsort (x:xs) = qsort left ++ [x] ++ qsort right
+  where
+  (left, right) = foldl (\(l,r) e -> if e < x then (e:l,r) else (l,e:r)) ([],[]) xs
