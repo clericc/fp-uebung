@@ -38,6 +38,12 @@ curry f x y = f (x,y)
   {- Definition von curry -}
 = f (x, y)
 
+
+-- Bestimmen Sie die Typen der Ausdrücke
+ 
+curry . uncurry :: (a -> b -> c) -> a -> b -> c
+uncurry . curry :: ((a, b) -> c) -> (a, b) -> c
+
 -- Aufgabe 3
 
 -- gegeben:
