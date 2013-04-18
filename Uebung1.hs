@@ -112,6 +112,16 @@ h >>> (f &&& g) = (h >>> f) &&& (h >>> g)
 
 
 -- Aufgabe 4
+
+fib :: Integral a => a -> a
+fib 0 = 0
+fib 1 = 1
+fib x = fib (x-1) + fib (x-2)
+
+fib2 :: Integral b => Int -> b
+fib2 = (!!) $ fibs
+  where fibs = 0:1:(zipWith (+) fibs (tail fibs))
+
 collatz :: (Integral a, Integral b) => a -> b
 collatz x
   | x == 1 = 0
