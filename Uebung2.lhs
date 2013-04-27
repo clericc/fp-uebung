@@ -60,16 +60,11 @@ Eine duale Sicht auf Listen ist die, Elemente an das Ende einer Liste anzuhänge
 > data RList a = Nil | Snoc (RList a) a deriving (Show, Eq)
  
 Schreiben Sie Konversionsfunktionen, die normale Listen in diese Struktur überführen und umgekehrt und die elementaren Zugriffsfunktionen rHead, rTail, rInit, rLast:
-
-> infixl 0 $$
-> ($$) :: a -> (a -> b) -> b
-> x $$ f = f x -- $$
  
 > listToRList :: [a] -> RList a
 > listToRList = foldl (\rlist x -> Snoc rlist x) Nil
 
 Laufzeit linear
-
 
 > rlistToList     :: RList a -> [a]
 > rlistToList     = rlistToList' []
@@ -107,7 +102,7 @@ Laufzeit konstant
 Laufzeit konstant
 
 
--- Aufgabe 4
+------- Aufgabe 4
 
 sei folgendermaßen definiert:
  
