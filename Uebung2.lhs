@@ -16,6 +16,7 @@ Verankerung
     {- Def. reverse -}
 = reverse ([] ++ [x])
 = reverse [x]
+	{- Def. reverse -}
 = reverse [] ++ [x]
 = [] ++ [x]
 = [x]
@@ -24,7 +25,7 @@ Wir nehmen an, dass "reverse (reverse xs) = xs" gilt, wir folgern also x:xs (als
   reverse (reverse (x:xs))
 = reverse (reverse xs ++ [x])
 = reverse (reverse y:ys ++ [x])
-= reverse . reverse
+= reverse (reverse ys ++ [y] ++ [x])
 
 = reverse (x : reverse xs)
     {- Def. reverse -}
@@ -46,10 +47,20 @@ length (_:xs) = 1 + length xs
 Verankerung mit [x] und [y]
 
   length ([x] ++ [y])
-= 1 + length ([y])
-= 
+= length ([x,y])
+= 1 + length [y]
+= 1 + 1 + length []
+= 1 + 1 + 0
+= 2
 
-= length [x] ++ length [y]
+= length [x] + length [y]
+= 1 + length [] + 1 + length []
+= 1 + 0 + 1 + 0
+= 2
+
+Induktion für (x:xs) und (y:ys) mit length (xs ++ ys) == length xs + length ys
+= length (x:xs ++ y:ys)
+= 1 + length
 
 
 
