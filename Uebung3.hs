@@ -5,11 +5,10 @@ import Test.HUnit
 -- Aufgabe 1
 -- reverse in O(n)
 reverse' :: [a] -> [a]
-reverse' xs = revhelp xs []
+reverse' = revhelp []
   where 
-    revhelp :: [a] -> [a] -> [a]
-    revhelp [] l = l
-    revhelp (y:ys) l = revhelp ys (y:l)
+    revhelp acc [] = acc
+    revhelp acc (y:ys) = revhelp (y:acc) ys 
     
 -- TestFaelle
 tests = test [ "test1" ~: "r [1,2,3]" ~: (reverse [1,2,3]) ~=? (reverse' [1,2,3]),
@@ -30,14 +29,12 @@ reverseFold = foldl (flip (:)) []
 cross :: [a] -> [b] -> [(a,b)]
 cross l1 l2 = [ (x,y) | x <- l1, y <- l2 ]
 
-bla = bla
-
 {- cross [1,2] [3,4] = [(1,3), (1,4), (2,3), (2,4)] -}
 
 -- Loesung ohne List comprehension
 cross' :: [a] -> [b] -> [(a,b)]
 cross' [] _c = []
-cross' (x:xs) ys = map (\y -> (x,y)) ys ++ cross' xs ys
+cross' (x:xs) ys = map ((,) x) ys ++ cross' xs ys
 
 
 -- Aufgabe 3
