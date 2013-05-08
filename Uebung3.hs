@@ -23,33 +23,37 @@ testIt = runTestTT tests
 
 -- Loesung mit Fold
 reverseFold :: [a] -> [a]
-reverseFold l = foldl (flip (:)) [] l
+reverseFold = foldl (flip (:)) []
 
 -- Aufgabe 2
 -- gegeben sei folgende Funktion
 cross :: [a] -> [b] -> [(a,b)]
 cross l1 l2 = [ (x,y) | x <- l1, y <- l2 ]
 
+bla = bla
+
 {- cross [1,2] [3,4] = [(1,3), (1,4), (2,3), (2,4)] -}
 
 -- Loesung ohne List comprehension
 cross' :: [a] -> [b] -> [(a,b)]
+cross' [] _c = []
+cross' (x:xs) ys = map (\y -> (x,y)) ys ++ cross' xs ys
 
 
 -- Aufgabe 3
 
-takeWhile           :: (a -> Bool) -> [a] -> [a]
-takeWhile p []       = []
-takeWhile p (x:xs)
-         | p x       = x : takeWhile p xs
-         | otherwise = []
+takeWhile'           :: (a -> Bool) -> [a] -> [a]
+takeWhile' p []       = []
+takeWhile' p (x:xs)
+  | p x       = x : takeWhile' p xs
+  | otherwise = []
  
 	
-dropWhile           :: (a -> Bool) -> [a] -> [a]
-dropWhile p []       = []
-dropWhile p xs@(x:xs')
-         | p x       = dropWhile p xs'
-         | otherwise = xs
+dropWhile'           :: (a -> Bool) -> [a] -> [a]
+dropWhile' p []       = []
+dropWhile' p l@(x:xs)
+  | p x       = dropWhile' p xs
+  | otherwise = l
 
 -- Zeigen Sie, dass fuer alle Praedikate p und alle Listen xs gilt
 -- takeWhile p xs ++ dropWhile p xs = xs
@@ -89,13 +93,19 @@ span :: (a -> Bool) -> [a] -> ([a], [a])
 span p xs = (takeWhile p xs, dropWhile p xs)
 
 -- Loesung, die die Liste nur einmal abarbeitet
-span :: (a -> Bool) -> [a] -> ([a], [a])
-span p xs = takedropWhile p [] xs
+{- 
+
+span' :: (a -> Bool) -> [a] -> ([a], [a])
+span' p xs = takedropWhile p [] xs
   where 
-    takedropWhile :: (a -> Bool) -> [a] -> [a] -> ([a], [a])
-    takedropWhile p xs y:ys
-        | p y = takedropWhile (xs ++ y) ys
-        | otherwise (xs, y:ys)
+    takedropWhile p xs (y:ys)
+      | p y = takedropWhile (xs ++ y) ys
+      | otherwise = (xs, y:ys)
+ --}
 
-
-
+span1 :: (a -> Bool) -> [a] -> ([a],[a])
+span1 p l@(x:xs)
+  | p x = (x:restL,restR)
+  | otherwise = ([],l)
+  where
+    (restL,restR) = span1 p xs
