@@ -40,14 +40,14 @@ cross' (x:xs) ys = map ((,) x) ys ++ cross' xs ys
 -- Aufgabe 3
 
 takeWhile'           :: (a -> Bool) -> [a] -> [a]
-takeWhile' p []       = []
+takeWhile' _ []       = []
 takeWhile' p (x:xs)
   | p x       = x : takeWhile' p xs
   | otherwise = []
  
 	
 dropWhile'           :: (a -> Bool) -> [a] -> [a]
-dropWhile' p []       = []
+dropWhile' _ []       = []
 dropWhile' p l@(x:xs)
   | p x       = dropWhile' p xs
   | otherwise = l
@@ -101,6 +101,7 @@ span' p xs = takedropWhile p [] xs
  --}
 
 span1 :: (a -> Bool) -> [a] -> ([a],[a])
+span1 _ [] = ([],[])
 span1 p l@(x:xs)
   | p x = (x:restL,restR)
   | otherwise = ([],l)
