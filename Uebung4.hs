@@ -46,13 +46,19 @@ concatF         :: [FList a] -> FList a
 concatF []       = empty
 concatF (x:xs)   = \ ys -> append x (concatF xs) ys
 
+-- weils so schön war
+concatF'        :: FList (FList a) -> FList a
+concatF' = foldrF (\xs xss -> if nullF xs then xss else append xs xss) empty
+
+testConcatF' = toList $ concatF' (fromList . map fromList) [[1..4],[],[5..7],[]]
+
 mapF            :: (a -> b)  -> FList a -> FList b
 mapF f           = foldrF (cons . f) empty
 
 foldrF          :: (a -> b -> b) -> b -> FList a -> b
 foldrF f e flist
   | nullF flist = e
-  | otherwise   = f (headF flist) (foldrF f e (tailF flist))  
+  | otherwise   = f (headF flist) (foldrF f e (tailF flist))
  
 headF           :: FList a -> a
 headF flist
