@@ -38,17 +38,21 @@ snoc flist x     = \ xs -> flist (x:xs)
 append          :: FList a -> FList a -> FList a   -- analog zu ++
 append xs ys     = \ zs -> xs (ys zs)
 
+-- convenience function
+(+++) :: FList a -> FList a -> FList a
+(+++) = append
+
 concatF         :: [FList a] -> FList a
 concatF []       = empty
 concatF (x:xs)   = \ ys -> append x (concatF xs) ys
 
 mapF            :: (a -> b)  -> FList a -> FList b
-mapF             = undefined
+mapF             = iHaveAbsolutelyNoIdea
 
 foldrF          :: (a -> b -> b) -> b -> FList a -> b
 foldrF f e flist
   | nullF flist = e
-  | otherwise  = undefined
+  | otherwise  = iHaveAbsolutelyNoIdea
  
 headF           :: FList a -> a
 headF flist
@@ -56,10 +60,12 @@ headF flist
   | otherwise   = head . toList $ flist
 
 tailF           :: FList a -> FList a
-tailF flist      = undefined
+tailF flist      = iHaveAbsolutelyNoIdea
 
 nullF           :: FList a -> Bool
 nullF flist      = null (flist [])
 
 reverseF        :: FList a -> FList a
-reverseF = undefined
+reverseF = iHaveAbsolutelyNoIdea
+
+iHaveAbsolutelyNoIdea = undefined
