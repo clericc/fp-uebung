@@ -15,11 +15,11 @@ binTreeToList (Node l x r)
 
 -- converts a list into an Flist
 fromList        :: [a] -> FList a
-fromList l      = \ xs -> l ++ xs
+fromList l       = \ xs -> l ++ xs
 
 -- converts an Flist into a list
 toList          :: FList a -> [a]
-toList l        = l []
+toList l         = l []
 
 
 -- to be implemented
@@ -29,7 +29,7 @@ empty            = id
 singleton       :: a -> FList a
 singleton x      = \ xs -> x:xs
  
-cons            ::       a -> FList a -> FList a
+cons            :: a -> FList a -> FList a
 cons x flist     = \ xs -> x : (flist xs)
 
 snoc            :: FList a ->       a -> FList a
@@ -47,12 +47,12 @@ concatF []       = empty
 concatF (x:xs)   = \ ys -> append x (concatF xs) ys
 
 mapF            :: (a -> b)  -> FList a -> FList b
-mapF             = iHaveAbsolutelyNoIdea
+mapF f           = foldrF (cons . f) empty
 
 foldrF          :: (a -> b -> b) -> b -> FList a -> b
 foldrF f e flist
   | nullF flist = e
-  | otherwise  = iHaveAbsolutelyNoIdea
+  | otherwise   = f (headF flist) (foldrF f e (tailF flist))  
  
 headF           :: FList a -> a
 headF flist
@@ -60,12 +60,12 @@ headF flist
   | otherwise   = head . toList $ flist
 
 tailF           :: FList a -> FList a
-tailF flist      = iHaveAbsolutelyNoIdea
+tailF flist      = \ xs -> tail (flist xs)
 
 nullF           :: FList a -> Bool
-nullF flist      = null (flist [])
+nullF            = null . toList
 
 reverseF        :: FList a -> FList a
-reverseF = iHaveAbsolutelyNoIdea
+reverseF         = foldrF (flip snoc) empty
 
-iHaveAbsolutelyNoIdea = undefined
+iHaveAbsolutelyNoIdea = error "i have absolutely no idea how to implement this"
