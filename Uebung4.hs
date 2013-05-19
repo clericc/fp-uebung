@@ -81,5 +81,6 @@ binTreeToFList (Node l x r)
            (binTreeToFList r))
            xs
 
+
 binTreeToList   :: BinTree a -> [a]
 binTreeToList   = toList . binTreeToFList
