@@ -1,9 +1,10 @@
 data BinTree a = Empty
                | Node (BinTree a) a (BinTree a)
+               deriving (Show, Eq)
 
 type FList a = [a] -> [a]
 
-
+{-
 binTreeToList  :: BinTree a -> [a]
 binTreeToList Empty = [] 
 binTreeToList (Node l x r) 
@@ -12,6 +13,7 @@ binTreeToList (Node l x r)
       [x]
       ++
       binTreeToList r
+--}
 
 -- converts a list into an Flist
 fromList        :: [a] -> FList a
@@ -32,7 +34,7 @@ singleton x      = \ xs -> x:xs
 cons            :: a -> FList a -> FList a
 cons x flist     = \ xs -> x : (flist xs)
 
-snoc            :: FList a ->       a -> FList a
+snoc            :: FList a -> a -> FList a
 snoc flist x     = \ xs -> flist (x:xs)
 
 append          :: FList a -> FList a -> FList a   -- analog zu ++
@@ -45,12 +47,6 @@ append xs ys     = \ zs -> xs (ys zs)
 concatF         :: [FList a] -> FList a
 concatF []       = empty
 concatF (x:xs)   = \ ys -> append x (concatF xs) ys
-
--- weils so schön war
-concatF'        :: FList (FList a) -> FList a
-concatF' = foldrF (\xs xss -> if nullF xs then xss else append xs xss) empty
-
-testConcatF' = toList $ concatF' (fromList . map fromList) [[1..4],[],[5..7],[]]
 
 mapF            :: (a -> b)  -> FList a -> FList b
 mapF f           = foldrF (cons . f) empty
@@ -74,4 +70,16 @@ nullF            = null . toList
 reverseF        :: FList a -> FList a
 reverseF         = foldrF (flip snoc) empty
 
-iHaveAbsolutelyNoIdea = error "i have absolutely no idea how to implement this"
+
+binTreeToFList :: BinTree a -> FList a
+binTreeToFList Empty = empty
+binTreeToFList (Node l x r)
+  = \xs -> ((binTreeToFList l) 
+           +++
+           singleton x
+           +++
+           (binTreeToFList r))
+           xs
+
+binTreeToList   :: BinTree a -> [a]
+binTreeToList   = toList . binTreeToFList
