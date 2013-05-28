@@ -34,23 +34,24 @@ data BinOp = Add | Sub | Mul | Div | Mod | Lol
 -- ----------------------------------------
 -- semantic domains
  
-newtype Result a = Val { val :: Either String a }
+data Result a = Error String
+              | Value a
+              
 
-
-instance Show a => Show (Result a) where
-  show (Val (Left msg)) = "Error: " ++ msg
-  show (Val (Right  x)) = "Result: " ++ show x
-  
-resError msg = Val $ Left msg
+throwError = Error
                 
  
 -- ----------------------------------------
 -- the identity monad
  
 instance Monad Result where
-  return x        = Val $ Right x
-  (Val (Left msg)) >>= g = Val (Left msg)
-  (Val (Right  x)) >>= g = g x
+  return x          = Value x
+  (Error msg) >>= g = Error msg
+  (Value   x) >>= g = g x
+  
+instance Show a => Show (Result a) where
+  show (Error msg) = "Error: " ++ msg
+  show (Value   x) = "Value: " ++ show x
  
 -- ----------------------------------------
 -- the meaning of an expression
@@ -71,7 +72,7 @@ type MF = Result Int -> Result Int ->
 lookupMft :: BinOp -> Result MF
 lookupMft op
   = case lookup op mft of
-    Nothing -> resError "operation not implemented"
+    Nothing -> throwError "operation not implemented"
     Just mf -> return mf
  
 mft :: [(BinOp, MF)]
