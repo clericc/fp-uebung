@@ -1,24 +1,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
  
--- The following compiler options are neccessary
--- for the extension concerning the error handling
--- they are not required for this simple example
- 
--- ----------------------------------------
---
--- Monadic version of simple expression
--- evaluator.
--- No extensions, same semantics as in Expr0
---
--- ----------------------------------------
- 
 module Expr1 where
  
 -- import Data.Maybe (fromMaybe)
  
 import Control.Monad (liftM2)
-import Control.Monad.Error 
+import Control.Monad.Error
  
 -- ----------------------------------------
 -- syntactic domains
@@ -28,13 +16,17 @@ data Expr  = Const  Int
              deriving (Show)
  
 data BinOp = Add | Sub | Mul | Div | Mod | Nil
-             deriving (Eq, Show)
+               deriving (Eq, Show)
+               
+data ErrorCode = NotImplemented | Unknown
  
 -- ----------------------------------------
 -- semantic domains
  
 data Result a = Error String
               | Value      a
+                deriving (Eq, Show)
+                
 
 -- ----------------------------------------
 -- class instances
@@ -48,11 +40,6 @@ instance MonadError String Result where
   throwError msg = Error msg
   catchError (Value a) _ = Value a
   catchError (Error msg) f = f msg
-  
-instance Show a => Show (Result a) where
-  show (Error msg) = "Error: " ++ msg
-  show (Value   x) = "Value: " ++ show x
-
  
 -- ----------------------------------------
 -- the meaning of an expression
