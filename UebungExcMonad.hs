@@ -16,8 +16,7 @@
  
 module Expr1 where
  
-import Data.Maybe
-    ( fromMaybe )
+-- import Data.Maybe (fromMaybe)
  
 import Control.Monad (liftM2)  
  
@@ -28,7 +27,7 @@ data Expr  = Const  Int
            | Binary BinOp Expr Expr
              deriving (Show)
  
-data BinOp = Add | Sub | Mul | Div | Mod | Lol
+data BinOp = Add | Sub | Mul | Div | Mod | Nil
              deriving (Eq, Show)
  
 -- ----------------------------------------
@@ -45,9 +44,9 @@ throwError = Error
 -- the identity monad
  
 instance Monad Result where
-  return x          = Value x
-  (Error msg) >>= g = Error msg
-  (Value   x) >>= g = g x
+  return x        = Value x
+  Error msg >>= _ = Error msg
+  Value   x >>= g = g x
   
 instance Show a => Show (Result a) where
   show (Error msg) = "Error: " ++ msg
@@ -57,17 +56,13 @@ instance Show a => Show (Result a) where
 -- the meaning of an expression
  
 eval :: Expr -> Result Int
-eval (Const i)
-  = return i
- 
-eval (Binary op l r)
-  = lookupMft op >>= (\f -> f (eval l) (eval r))
+eval (Const i) = return i 
+eval (Binary op l r) = lookupMft op >>= (\f -> f (eval l) (eval r))
  
 -- ----------------------------------------
 -- the meaning of binary operators
  
-type MF = Result Int -> Result Int ->
-          Result Int
+type MF = Result Int -> Result Int -> Result Int
  
 lookupMft :: BinOp -> Result MF
 lookupMft op
@@ -94,6 +89,6 @@ e1 = Binary Mul (Binary Add (Const 4)
                 (Const 7)
 e2 = Binary Div (Const 1) (Const 0)
 e3 = Binary Mod (Const 1) (Const 0)
-e4 = Binary Lol (Const 1) (Const 2)
+e4 = Binary Nil (Const 1) (Const 2)
  
 v1 = eval e1
