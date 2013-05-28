@@ -1,6 +1,5 @@
-{-# OPTIONS
-    -XTypeSynonymInstances
-    -XMultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
  
 -- The following compiler options are neccessary
 -- for the extension concerning the error handling
@@ -18,7 +17,8 @@ module Expr1 where
  
 -- import Data.Maybe (fromMaybe)
  
-import Control.Monad (liftM2)  
+import Control.Monad (liftM2)
+import Control.Monad.Error 
  
 -- ----------------------------------------
 -- syntactic domains
@@ -34,23 +34,25 @@ data BinOp = Add | Sub | Mul | Div | Mod | Nil
 -- semantic domains
  
 data Result a = Error String
-              | Value a
-              
+              | Value      a
 
-throwError = Error
-                
- 
 -- ----------------------------------------
--- the identity monad
- 
+-- class instances
+
 instance Monad Result where
-  return x        = Value x
+  return          = Value
   Error msg >>= _ = Error msg
-  Value   x >>= g = g x
+  Value x >>= g   = g x
+
+instance MonadError String Result where
+  throwError msg = Error msg
+  catchError (Value a) _ = Value a
+  catchError (Error msg) f = f msg
   
 instance Show a => Show (Result a) where
   show (Error msg) = "Error: " ++ msg
   show (Value   x) = "Value: " ++ show x
+
  
 -- ----------------------------------------
 -- the meaning of an expression
@@ -83,12 +85,10 @@ mft
 -- ----------------------------------------
 -- sample expressions
  
-e1 = Binary Mul (Binary Add (Const 4)
-                            (Const 2)
-                )
-                (Const 7)
-e2 = Binary Div (Const 1) (Const 0)
-e3 = Binary Mod (Const 1) (Const 0)
-e4 = Binary Nil (Const 1) (Const 2)
- 
-v1 = eval e1
+e1 = eval $ Binary Mul (Binary Add (Const 4)
+                                   (Const 2))
+                       (Const 7)
+e2 = eval $ (Binary Nil (Const 1) (Const 1))
+e3 = eval $ Binary Mod (Const 1) (Const 0)
+e4 = eval $ Binary Nil (Const 1) (Const 2)
+
