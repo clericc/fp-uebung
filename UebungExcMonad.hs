@@ -36,6 +36,8 @@ instance Monad Result where
   Error msg >>= _ = Error msg
   Value x >>= g   = g x
 
+
+
 instance MonadError String Result where
   throwError msg = Error msg
   catchError (Value a) _ = Value a
@@ -64,11 +66,17 @@ mft
   = [ (Add, liftM2 (+))
     , (Sub, liftM2 (-))
     , (Mul, liftM2 (*))
-    , (Div, liftM2 div)
+    , (Div, divM)
     ]
  
+divM :: Integral a => Result a -> Result a -> Result a
+divM ma mb = do
+              x <- ma
+              y <- mb
+              if y == 0 
+              then throwError "Division by Zero"
+              else return (x `div` y)
 
- 
 -- ----------------------------------------
 -- sample expressions
  
@@ -78,4 +86,5 @@ e1 = eval $ Binary Mul (Binary Add (Const 4)
 e2 = eval $ (Binary Nil (Const 1) (Const 1))
 e3 = eval $ Binary Mod (Const 1) (Const 0)
 e4 = eval $ Binary Nil (Const 1) (Const 2)
-
+e5 = eval $ Binary Div (Const 10) (Const 0)
+e6 = eval $ Binary Div (Const 10) (Const 2)
