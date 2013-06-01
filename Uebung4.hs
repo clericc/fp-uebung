@@ -41,6 +41,7 @@ singleton             = (:)
 cons                 :: a -> FList a -> FList a
 -- cons x flist       = \ xs -> x : (flist xs)
 -- cons x flist xs    = x : (flist xs)
+-- cons x flist xs    = (x:) . flist $ xs
 -- cons x flist       = (x:) . flist
 cons x                = (.) (x:)
 
@@ -66,18 +67,18 @@ concatF              :: [FList a] -> FList a
 concatF []            = empty
 concatF (x:xs)        = append x (concatF xs)
 
--- O(n) ueber Länge der FList
+-- O(n) ueber Laenge der FList
 mapF                 :: (a -> b)  -> FList a -> FList b
 mapF f                = foldrF (cons . f) empty
 
--- O(n) ueber Länge der FList
+-- O(n) ueber Laenge der FList
 foldrF               :: (a -> b -> b) -> b -> FList a -> b
 foldrF f e flist
   | nullF flist       = e
   | otherwise         = f (headF flist) (foldrF f e (tailF flist))
 
 
--- O(n) ueber Länge der FLis
+-- O(n) ueber Laenge der FLis
 foldlF               :: (a -> b -> a) -> a -> FList b -> a
 foldlF f e flist
   | nullF flist       = e
@@ -97,7 +98,7 @@ tailF                 =  (tail .)
 nullF           :: FList a -> Bool
 nullF            = null . toList
 
--- O(n) ueber Länge der FList
+-- O(n) ueber Laenge der FList
 reverseF        :: FList a -> FList a
 reverseF         = foldrF (flip snoc) empty
 -- reverseF      = foldlF (flip cons) empty
@@ -114,6 +115,6 @@ binTreeToFList (Node l x r)
            (binTreeToFList r))
            xs
 
-
+-- O(?)
 binTreeToList   :: BinTree a -> [a]
 binTreeToList   = toList . binTreeToFList

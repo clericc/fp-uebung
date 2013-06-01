@@ -48,7 +48,7 @@ instance MonadError String Result where
  
 eval :: Expr -> Result Int
 eval (Const i) = return i 
-eval (Binary op l r) = lookupMft op >>= (\f -> f (eval l) (eval r))
+eval (Binary op l r) = lookupMft op >>= (\f -> (eval l) `f` (eval r))
  
 -- ----------------------------------------
 -- the meaning of binary operators
@@ -69,13 +69,14 @@ mft
     , (Div, divM)
     ]
  
-divM :: Integral a => Result a -> Result a -> Result a
 divM ma mb = do
               x <- ma
               y <- mb
               if y == 0 
-              then throwError "Division by Zero"
+              then throwError "division by 0"
               else return (x `div` y)
+
+divM' ma mb = ma >>= (\a -> mb >>= \b -> if b == 0 then throwError "division by 0" else return (a `div` b))
 
 -- ----------------------------------------
 -- sample expressions
