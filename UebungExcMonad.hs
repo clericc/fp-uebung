@@ -15,7 +15,7 @@ data Expr  = Const  Int
            | Binary BinOp Expr Expr
              deriving (Show)
  
-data BinOp = Add | Sub | Mul | Div | Mod | Nil
+data BinOp = Add | Sub | Mul | Div | Mod
                deriving (Eq, Show)
                
 data ErrorCode = NotImplemented | Unknown
@@ -84,8 +84,6 @@ divM' ma mb = ma >>= (\a -> mb >>= \b -> if b == 0 then throwError "division by 
 e1 = eval $ Binary Mul (Binary Add (Const 4)
                                    (Const 2))
                        (Const 7)
-e2 = eval $ (Binary Nil (Const 1) (Const 1))
-e3 = eval $ Binary Mod (Const 1) (Const 0)
-e4 = eval $ Binary Nil (Const 1) (Const 2)
-e5 = eval $ Binary Div (Const 10) (Const 0)
-e6 = eval $ Binary Div (Const 10) (Const 2)
+e2 = eval $ Binary Mod (Const 1) (Const 0)
+e3 = eval $ Binary Div (Const 10) (Const 0)
+e4 = eval $ Binary Div (Const 10) (Const 2)
