@@ -15,33 +15,36 @@ data Expr  = Const  Int
            | Binary BinOp Expr Expr
              deriving (Show)
  
-data BinOp = Add | Sub | Mul | Div | Mod
+
+data BinOp = Add | Sub | Mul | Div | Mod | PlusMinus
                deriving (Eq, Show)
-               
-data ErrorCode = NotImplemented | Unknown
  
 -- ----------------------------------------
 -- semantic domains
  
-data Result a = Error String
-              | Value      a
+data Result a = Err { err :: String }
+              | Val { val ::    [a] }
                 deriving (Eq, Show)
-                
 
 -- ----------------------------------------
 -- class instances
 
 instance Monad Result where
-  return          = Value
-  Error msg >>= _ = Error msg
-  Value x >>= g   = g x
-
+  return x      = Val [x]
+  Err msg >>= _ = Err msg
+  Val []  >>= _ = Val []
+  Val xs  >>= g = Val . flatten . map g $ xs
+  
+flatten :: [Result a] -> [a]
+flatten [] = []
+flatten ((Err msg):xss) = flatten xss
+flatten ((Val  xs):xss) = xs ++ flatten xss
 
 
 instance MonadError String Result where
-  throwError msg = Error msg
-  catchError (Value a) _ = Value a
-  catchError (Error msg) f = f msg
+  throwError msg         = Err msg
+  catchError (Val   a) _ = Val a
+  catchError (Err msg) f = f msg
  
 -- ----------------------------------------
 -- the meaning of an expression
@@ -67,16 +70,21 @@ mft
     , (Sub, liftM2 (-))
     , (Mul, liftM2 (*))
     , (Div, divM)
+    , (PlusMinus, plusMinusM)
     ]
- 
-divM ma mb = do
-              x <- ma
-              y <- mb
-              if y == 0 
-              then throwError "division by 0"
-              else return (x `div` y)
 
-divM' ma mb = ma >>= (\a -> mb >>= \b -> if b == 0 then throwError "division by 0" else return (a `div` b))
+plusMinusM ma mb = do
+  x <- mae
+  y <- mb
+  Val [x+y,x-y]
+
+divM ma mb = do
+  x <- ma
+  y <- mb
+  if y == 0 
+  then throwError "division by 0"
+  else return (x `div` y)
+
 
 -- ----------------------------------------
 -- sample expressions
@@ -84,6 +92,7 @@ divM' ma mb = ma >>= (\a -> mb >>= \b -> if b == 0 then throwError "division by 
 e1 = eval $ Binary Mul (Binary Add (Const 4)
                                    (Const 2))
                        (Const 7)
-e2 = eval $ Binary Mod (Const 1) (Const 0)
-e3 = eval $ Binary Div (Const 10) (Const 0)
-e4 = eval $ Binary Div (Const 10) (Const 2)
+e2 = eval $ Binary PlusMinus (Const 4) (Const 2)
+e3 = eval $ Binary Mod (Const 6) (Const 2)
+e4 = eval $ Binary Div (Const 10) (Const 0)
+e5 = eval $ Binary Div (Const 10) (Const 2)
