@@ -1,6 +1,8 @@
-
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+
+-- Uebung 6 Funktionale Programmierung
+-- Von Julian Wefers und Alexander Mills
  
 -- The following compiler options are neccessary
 -- for the extension concerning the error handling
