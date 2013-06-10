@@ -18,63 +18,79 @@
  
 module Expr1 where
  
-import Data.Maybe
-    ( fromMaybe )
+import Data.Maybe ( fromMaybe )
  
-import Control.Monad ()         -- ( liftM2 )
-import Control.Monad.Error
- 
+import Control.Monad ( liftM2 )
+import Control.Monad.Error ( MonadError ( .. ) )
+import Control.Monad.Reader ( MonadReader ( .. ) )
+
 -- ----------------------------------------
 -- syntactic domains
  
 data Expr  = Const  Int
+           | Var    Id                -- NEU
+           | Let    Id    Expr Expr   -- NEU
            | Binary BinOp Expr Expr
              deriving (Show)
  
-data BinOp = Add | Sub | Mul | Div | Mod | PlusMinus
+data BinOp = Add | Sub | Mul | Div | Mod
              deriving (Eq, Show)
+ 
+type Id    = String
  
 -- ----------------------------------------
 -- semantic domains
 
-newtype Result a = Val { val :: [Either String a] }
-  deriving (Eq,Show)
+data Result a
+           = Res { unRes :: Env -> ResVal a }
  
--- ----------------------------------------
+data ResVal a
+           = Val { val :: a }
+           | Exc { exc :: String }
+             deriving (Show)
+ 
+type Env   = [(Id, Int)]
+
+instance Monad ResVal where
+  return        = Val
+  (Exc e) >>= g = Exc e
+  (Val v) >>= g = g v
 
 instance Monad Result where
-  return x = Val [Right x]
-  fail msg = Val [Left msg]
-  Val []  >>= _ = Val []
-  Val xs >>= g = Val . mapEither g xs
-
-mapEither         :: Monad m => (a -> m b) -> [Either String a] -> 
-mapEither _ []     = []
-mapEither g ((Left msg):xs) = Left msg : mapEither xs
-mapEither g ((Right  x):xs) =        x' : mapEither xs
-  
+  return        = Res . const . return
+  (Res f) >>= g = Res $ \ env -> f env >>= \ v -> unRes (g v) env
 
 instance MonadError String Result where
-  throwError     = Val . return . Left
-  catchError     = undefined
+  throwError  = Res . const . Exc
+  catchError (Res f) handler
+                = Res $ \ env -> case f env of
+                                   (Exc e) -> unRes (handler e) env
+                                   (Val v) -> Val v
+ 
+instance MonadReader Env Result where
+  ask       = Res (Val $)
+  local f c = Res (unRes c . f $)
   
 -- ----------------------------------------
 -- the meaning of an expression
- 
+
+
 eval :: Expr -> Result Int
-eval (Const i)
-  = return i
- 
+eval (Const i) = return i
 eval (Binary op l r)
   = do
     mf <- lookupMft op
     mf (eval l) (eval r)
- 
+eval (Var i) = Res $ \ env -> evalEnv (Var i) env
+
+
+evalEnv :: Expr -> Env -> ResVal Int
+evalEnv = undefined
+
 -- ----------------------------------------
 -- the meaning of binary operators
  
-type MF = Result Int -> Result Int ->
-          Result Int
+type MF = Result Int -> Result Int -> Result Int
  
 lookupMft :: BinOp -> Result MF
 lookupMft op
@@ -89,21 +105,20 @@ mft
     , (Sub, liftM2 (-))
     , (Mul, liftM2 (*))
     , (Div, divM)
-    , (PlusMinus, plusMinusM)
     ]
 
-plusMinusM :: MF
-plusMinusM ma mb = do
-  x <- ma
-  y <- mb
-  Val [x+y,x-y]
+--plusMinusM :: MF
+--plusMinusM ma mb = do
+--  x <- ma
+--  y <- mb
+--  Val [x+y,x-y]
 
 divM :: MF
 divM ma mb = do
   x <- ma
   y <- mb
   if y == 0 
-  then Val []
+  then throwError "division by zero"
   else return (x `div` y)
  
 
@@ -115,11 +130,10 @@ divM ma mb = do
 e1 = Binary Mul (Binary Add (Const 4)
                        (Const 2))
                        (Const 7)
-e2 = Binary PlusMinus (Const 4) (Const 2)
 e3 = Binary Mod (Const 6) (Const 2)
 e4 = Binary Div (Const 10) (Const 0)
 e5 = Binary Div (Const 10) (Const 2)
-e6 = Binary PlusMinus (e2) (Const 2)
-e7 = Binary Div (Const 100) (e6)
  
 -- ----------------------------------------
+
+--}
