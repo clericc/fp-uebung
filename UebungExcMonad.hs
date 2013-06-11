@@ -33,12 +33,7 @@ instance Monad Result where
   return x      = Val [x]
   Err msg >>= _ = Err msg
   Val []  >>= _ = Val []
-  Val xs  >>= g = Val . flatten . map g $ xs
-  
-flatten :: [Result a] -> [a]
-flatten [] = []
-flatten ((Err msg):xss) = flatten xss
-flatten ((Val  xs):xss) = xs ++ flatten xss
+  Val xs  >>= g = Val . concat . map (val . g) $ xs
 
 
 instance MonadError String Result where
@@ -74,7 +69,7 @@ mft
     ]
 
 plusMinusM ma mb = do
-  x <- mae
+  x <- ma
   y <- mb
   Val [x+y,x-y]
 
