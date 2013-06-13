@@ -33,7 +33,12 @@ instance Monad Result where
   return x      = Val [x]
   Err msg >>= _ = Err msg
   Val []  >>= _ = Val []
-  Val xs  >>= g = Val . concat . map (val . g) $ xs
+  Val xs  >>= g = Val . flatten . map g $ xs
+
+flatten :: [Result a] -> [a]
+flatten [] = []
+flatten ((Err msg):xss) = flatten xss
+flatten ((Val  xs):xss) = xs ++ flatten xss
 
 
 instance MonadError String Result where
@@ -87,7 +92,7 @@ divM ma mb = do
 e1 = eval $ Binary Mul (Binary Add (Const 4)
                                    (Const 2))
                        (Const 7)
-e2 = eval $ Binary PlusMinus (Const 4) (Const 2)
+e2 = eval $ Binary PlusMinus (Binary PlusMinus (Const 4) (Const 2)) (Binary Div (Const 10) (Const 0))
 e3 = eval $ Binary Mod (Const 6) (Const 2)
 e4 = eval $ Binary Div (Const 10) (Const 0)
 e5 = eval $ Binary Div (Const 10) (Const 2)
