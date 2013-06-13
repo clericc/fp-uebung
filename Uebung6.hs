@@ -54,7 +54,7 @@ instance Monad Result where
 flatten :: [Result a] -> [a]
 flatten [] = []
 flatten ((Err msg):xss) = flatten xss
-flatten ((Val  xs):xss) = xs ++ flatten xss
+flatten ((Val  xs):xss) = xs ++ flatten xss 
   
 
 instance MonadError String Result where
@@ -83,7 +83,7 @@ type MF = Result Int -> Result Int ->
 lookupMft :: BinOp -> Result MF
 lookupMft op
   = case lookup op mft of
-    Nothing -> error
+    Nothing -> throwError
                "operation not implemented"
     Just mf -> return mf
     
