@@ -36,31 +36,27 @@ data BinOp = Add | Sub | Mul | Div | Mod | PlusMinus
  
 -- ----------------------------------------
 -- semantic domains
- 
-data Result a
-           = Err { err :: String }
-           | Val { val ::    [a] }
-             deriving (Eq, Show)
+
+newtype Result a = Val { val :: [Either String a] }
+  deriving (Eq,Show)
  
 -- ----------------------------------------
--- the identity monad
- 
-instance Monad Result where
-  return x      = Val [x]
-  Err msg >>= _ = Err msg
-  Val []  >>= _ = Val []
-  Val xs  >>= g = Val . flatten . map g $ xs
 
-flatten :: [Result a] -> [a]
-flatten [] = []
-flatten ((Err msg):xss) = flatten xss
-flatten ((Val  xs):xss) = xs ++ flatten xss 
+instance Monad Result where
+  return x = Val [Right x]
+  fail msg = Val [Left msg]
+  Val []  >>= _ = Val []
+  Val xs >>= g = Val . mapEither g xs
+
+mapEither         :: Monad m => (a -> m b) -> [Either String a] -> 
+mapEither _ []     = []
+mapEither g ((Left msg):xs) = Left msg : mapEither xs
+mapEither g ((Right  x):xs) =        x' : mapEither xs
   
 
 instance MonadError String Result where
-  throwError msg         = Err msg
-  catchError (Val   a) _ = Val a
-  catchError (Err msg) f = f msg
+  throwError     = Val . return . Left
+  catchError     = undefined
   
 -- ----------------------------------------
 -- the meaning of an expression
