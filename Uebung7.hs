@@ -56,27 +56,36 @@ instance Monad ResVal where
   (Exc e) >>= _ = Exc e
   (Val v) >>= g = g v
 
+
 instance Monad Result where
   -- Wrap a value in ResVal ignore any incoming environment since the value is constant
   return        = Res . const . return
+
   -- evaluate f with a given environment and evaluate (g v) with the same env
   (Res f) >>= g = Res $ \ env -> f env >>= \ v -> unRes (g v) env
 
+
 instance MonadError String Result where
+  -- wrap an exception string and ignore any environment
   throwError  = Res . const . Exc
+
   -- If f throws an Error, the handler is applied, otherwise ignored
   catchError (Res f) handler
                 = Res $ \ env -> case f env of
                                    (Exc e) -> unRes (handler e) env
                                    (Val v) -> Val v
+
  
 instance MonadReader Env Result where
   -- take the incoming environment and wrap it in ResVal
   ask       = Res return
+
   -- modify the incoming environment with f and apply it to c
   local f c = Res (unRes c . f)
+
   -- do something with the environment and wrap the result in Result
   reader f  = Res (return . f)
+
 
 -- show the content of Result considering an empty outer environment
 instance Show a => Show (Result a) where
@@ -86,6 +95,7 @@ instance Show a => Show (Result a) where
 -- the meaning of an expression
 
 eval :: Expr -> Result Int
+
 eval (Const i) 
   = return i
 
