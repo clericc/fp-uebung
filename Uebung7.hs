@@ -71,7 +71,10 @@ instance MonadReader Env Result where
   ask       = Res Val
   local f c = Res (unRes c . f)
   reader f  = Res (return . f)
-  
+
+instance Show a => Show (Result a) where
+   show (Res f) = show $ f []
+
 -- ----------------------------------------
 -- the meaning of an expression
 
@@ -137,7 +140,7 @@ e1 = Binary Mul (Binary Add (Const 4)
 e3 = Binary Mod (Const 6) (Const 2)
 e4 = Binary Div (Const 10) (Const 0)
 e5 = Binary Div (Const 10) (Const 2)
+e6 = Let "a" (Const 5) (Var "a")
+e7 = Let "a" (Let "b" (Const 1) (Var "b")) (Let "b" (Const 2) (Binary Add (Var "a") (Var "b")))
  
 -- ----------------------------------------
-
---}
