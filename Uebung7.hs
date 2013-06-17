@@ -76,13 +76,18 @@ instance MonadReader Env Result where
 -- the meaning of an expression
 
 eval :: Expr -> Result Int
-eval (Const i)      = return i
+eval (Const i) 
+  = return i
+
 eval (Var  id) 
   = ask >>= \ env ->
       case lookup id env of
         Nothing  -> throwError "unbound variable"
         Just val -> return val
-eval (Let id e1 e2) = eval e1 >>= \ val -> local ((id,val):) (eval e2) 
+
+eval (Let id e1 e2)
+  = eval e1 >>= \ val -> local ((id,val):) (eval e2) 
+
 eval (Binary op l r)
   = do
     mf <- lookupMft op
