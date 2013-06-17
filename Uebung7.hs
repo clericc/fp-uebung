@@ -87,10 +87,6 @@ instance MonadReader Env Result where
   reader f  = Res (return . f)
 
 
--- show the content of Result considering an empty outer environment
-instance Show a => Show (Result a) where
-   show (Res f) = show $ f []
-
 -- ----------------------------------------
 -- the meaning of an expression
 
@@ -147,8 +143,11 @@ divM ma mb = do
   then throwError "division by zero"
   else return (x `div` y)
  
+-- ----------------------------------------
+-- expression evaluator with outer environment
 
- 
+evalEnv :: Expr -> Env -> ResVal Int
+evalEnv = unRes . eval
  
 -- ----------------------------------------
 -- sample expressions
