@@ -57,21 +57,28 @@ instance Monad ResVal where
   (Val v) >>= g = g v
 
 instance Monad Result where
+  -- Wrap a value in ResVal ignore any incoming environment since the value is constant
   return        = Res . const . return
+  -- evaluate f with a given environment and evaluate (g v) with the same env
   (Res f) >>= g = Res $ \ env -> f env >>= \ v -> unRes (g v) env
 
 instance MonadError String Result where
   throwError  = Res . const . Exc
+  -- If f throws an Error, the handler is applied, otherwise ignored
   catchError (Res f) handler
                 = Res $ \ env -> case f env of
                                    (Exc e) -> unRes (handler e) env
                                    (Val v) -> Val v
  
 instance MonadReader Env Result where
-  ask       = Res Val
+  -- take the incoming environment and wrap it in ResVal
+  ask       = Res return
+  -- modify the incoming environment with f and apply it to c
   local f c = Res (unRes c . f)
+  -- do something with the environment and wrap the result in Result
   reader f  = Res (return . f)
 
+-- show the content of Result considering an empty outer environment
 instance Show a => Show (Result a) where
    show (Res f) = show $ f []
 
@@ -82,12 +89,14 @@ eval :: Expr -> Result Int
 eval (Const i) 
   = return i
 
+-- try to retrieve a value for id out of the current env
 eval (Var  id)
   = ask >>= \ env ->
       case lookup id env of
         Nothing  -> throwError "unbound variable"
         Just val -> return val
 
+-- evaluate e1 and store its value in the env for e2
 eval (Let id e1 e2)
   = eval e1 >>= \ val -> local ((id,val):) (eval e2) 
 
