@@ -18,12 +18,11 @@
  
 module Expr1 where
  
-import Data.Maybe
-    ( fromMaybe )
+import Data.Maybe ( fromMaybe )
  
-import Control.Monad ()         -- ( liftM2 )
-import Control.Monad.Error
-import Control.Monad.Reader
+import Control.Monad ( liftM2 )
+import Control.Monad.Error ( MonadError ( .. ) )
+import Control.Monad.Reader ( MonadReader ( .. ) )
 
 -- ----------------------------------------
 -- syntactic domains
@@ -70,8 +69,8 @@ instance MonadError String Result where
                                    (Val v) -> Val v
  
 instance MonadReader Env Result where
-  ask       = Res $ \ env -> Val env
-  local f c = Res $ \ env -> (unRes c) (f env)
+  ask       = Res (Val $)
+  local f c = Res (unRes c . f $)
   
 -- ----------------------------------------
 -- the meaning of an expression
