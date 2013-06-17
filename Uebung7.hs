@@ -56,7 +56,6 @@ instance Monad ResVal where
   (Exc e) >>= g = Exc e
   (Val v) >>= g = g v
 
-
 instance Monad Result where
   return        = Res . const . return
   (Res f) >>= g = Res $ \ env -> f env >>= \ v -> unRes (g v) env
@@ -91,8 +90,7 @@ evalEnv = undefined
 -- ----------------------------------------
 -- the meaning of binary operators
  
-type MF = Result Int -> Result Int ->
-          Result Int
+type MF = Result Int -> Result Int -> Result Int
  
 lookupMft :: BinOp -> Result MF
 lookupMft op
