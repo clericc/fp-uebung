@@ -76,23 +76,17 @@ instance MonadReader Env Result where
 -- the meaning of an expression
 
 eval :: Expr -> Result Int
---eval (Const i)      = return i
---eval v@(Var  id)    = Res (evalEnv v)
---eval (Let id e1 e2) = Res $ \ env -> 
---eval (Binary op l r)
---  = do
---    mf <- lookupMft op
---    mf (eval l) (eval r)
-eval e = Res (evalEnv e)
-
-evalEnv :: Expr -> Env -> ResVal Int
-evalEnv (Const i) _ = return i
-evalEnv (Var id) env 
-  = case lookup id env of
-    Nothing  -> throwError "no variable binding"
-    Just val -> return val
-evalEnv (Let id e1 e2) env = evalEnv e1 env >>= \ val -> evalEnv e2 (id,val):env
-evalEnv (Binary op l r) env = lookupMft op >>= \ mf -> mf (evalEnv l env) (evalEnv r env)
+eval (Const i)      = return i
+eval (Var  id) 
+  = ask >>= \ env ->
+      case lookup id env of
+        Nothing  -> throwError "unbound variable"
+        Just val -> return val
+eval (Let id e1 e2) = eval e1 >>= \ val -> local ((id,val):) (eval e2) 
+eval (Binary op l r)
+  = do
+    mf <- lookupMft op
+    mf (eval l) (eval r)
 
 -- ----------------------------------------
 -- the meaning of binary operators
