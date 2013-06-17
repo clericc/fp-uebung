@@ -41,7 +41,7 @@ type Id    = String
 -- ----------------------------------------
 -- semantic domains
 
-data Result a
+newtype Result a
            = Res { unRes :: Env -> ResVal a }
  
 data ResVal a
