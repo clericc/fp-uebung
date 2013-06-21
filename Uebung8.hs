@@ -127,7 +127,8 @@ mft
   = [ (Add, liftM2 (+))
     , (Sub, liftM2 (-))
     , (Mul, liftM2 (*))
-    , (Div, divM)
+    , (Div,       divM)
+    , (Seq,       (>>))
     ]
 
 --plusMinusM :: MF
