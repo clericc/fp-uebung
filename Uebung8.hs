@@ -5,7 +5,7 @@
 -- Von Julian Wefers und Alexander Mills
 -- ----------------------------------------
 
-module Expr7 where
+module Expr8 where
 
 import Data.Maybe ( fromMaybe )
 
@@ -148,8 +148,8 @@ divM ma mb = do
 -- ----------------------------------------
 -- expression evaluator with outer environment
 
-evalEnv     :: Expr -> VState -> ResVal Int
-evalEnv e s  = fst $ unRes (eval e) s
+evalEnv  :: Expr -> VState -> ResVal Int
+evalEnv e  = fst . unRes (eval e)
 
 -- ----------------------------------------
 -- sample expressions
@@ -160,4 +160,21 @@ e1 = Binary Mul (Binary Add (Const 4)
 e3 = Binary Mod (Const 6) (Const 2)
 e4 = Binary Div (Const 10) (Const 0)
 e5 = Binary Div (Const 10) (Const 2)
+
+e6 = Binary Seq
+      (Binary Seq
+        (Assign "a" (Const 1))
+        (Assign "b" (Const 3)))
+      (Binary Add
+        (Var "a")
+        (Var "b"))
+e7 = Binary Seq
+      (Binary Seq
+        (Assign "a" (Const 1))
+        (Assign "b" (Const 3)))
+      (Binary Add
+        (Assign "a" (Const 5))
+        (Var "b"))
+
+
 -- ----------------------------------------
