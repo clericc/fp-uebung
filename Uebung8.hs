@@ -108,6 +108,12 @@ eval (If cond e1 e2) = do
   then eval e1
   else eval e2
 
+eval (While cond expr) = do
+  cond' <- eval cond
+  if   cond' /= 0
+  then eval expr >> eval (While cond expr)
+  else return 1
+
 eval (Binary op l r)
   = lookupMft op >>= \ mf -> mf (eval l) (eval r)
 
@@ -155,27 +161,43 @@ evalEnv e  = fst . unRes (eval e)
 -- ----------------------------------------
 -- sample expressions
 
-e1 = Binary Mul (Binary Add (Const 4)
-                       (Const 2))
-                       (Const 7)
-e3 = Binary Mod (Const 6) (Const 2)
-e4 = Binary Div (Const 10) (Const 0)
-e5 = Binary Div (Const 10) (Const 2)
+e1 = Binary Mul (Binary Add (Const 2)
+                            (Const 4)
+                )
+                (Const 7)
+e2 = Binary Div (Const 1) (Const 0)
+e3 = Binary Mod (Const 1) (Const 0)
+e4 = Var "x"
+e5 = Binary Mul (Binary Add e4
+                            (Const 1)
+                ) e4
+ 
+e4' = Binary Seq (Assign "x" (Const 42)) e4
+e5' = Binary Seq (Assign "x" (Const 6))  e5
+ 
+e6' = foldr1 (Binary Seq) $
+      [ Assign "x" (Const 42)
+      , Assign "y" (Const 13)
+      , Assign "t" (Var "x")
+      , Assign "x" (Var "y")
+      , Assign "y" (Var "t")
+      ]
+ 
+e7' = foldr1 (Binary Seq) $
+      [ e6'
+      , Assign "r" (Binary Sub (Var "x") (Var "y"))
+      , If (Var "r") (Var "r") (Var "x")
+      ]
+ 
+e8  = Binary Seq e4' $
+      While (Var "x")
+            (Assign "x" (Binary Sub (Var "x")
+                                    (Const 1)))
 
-e6 = Binary Seq
-      (Binary Seq
-        (Assign "a" (Const 1))
-        (Assign "b" (Const 3)))
-      (Binary Add
-        (Var "a")
-        (Var "b"))
-e7 = Binary Seq
-      (Binary Seq
-        (Assign "a" (Const 1))
-        (Assign "b" (Const 3)))
-      (Binary Add
-        (Assign "a" (Const 5))
-        (Var "b"))
-
+e9 = foldr1 (Binary Seq) $
+      [ e6'
+      , Assign "r" (Binary Sub (Var "x") (Var "y"))
+      , If (Const 0) (Var "r") (Var "x")
+      ]
 
 -- ----------------------------------------
