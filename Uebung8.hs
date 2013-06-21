@@ -1,17 +1,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
--- Uebung 7 Funktionale Programmierung
+-- Uebung 8 Funktionale Programmierung
 -- Von Julian Wefers und Alexander Mills
 -- ----------------------------------------
 
 module Expr8 where
 
-import Data.Maybe ( fromMaybe )
+-- import Data.Maybe ( fromMaybe )
 
-import Control.Monad ( liftM2 )
+import Control.Monad       ( liftM2 )
 import Control.Monad.Error ( MonadError ( .. ) )
 import Control.Monad.State ( MonadState ( .. ) )
+import Data.AssocList      ( addEntry )
 
 -- ----------------------------------------
 -- syntactic domains
@@ -98,7 +99,7 @@ eval (Var  v)
 eval (Assign v e) = do
   val   <- eval e
   state <- get
-  put ((v,val):state)
+  put $ addEntry v val state
   return val
 
 eval (If cond e1 e2) = do
