@@ -13,6 +13,7 @@ import Control.Monad       ( liftM2 )
 import Control.Monad.Error ( MonadError ( .. ) )
 import Control.Monad.State ( MonadState ( .. ) )
 import Data.AssocList      ( addEntry )
+import Control.Monad.Loops ( whileM )
 
 -- ----------------------------------------
 -- syntactic domains
@@ -110,13 +111,18 @@ eval (If cond e1 e2) = do
 
 -- Repeat an action until cond is zero.
 -- Returns the value of the last execution of the expr block.
-eval (While cond expr) = evalWhile cond expr 0
-  where
-  evalWhile cond expr val = do
-    cond' <- eval cond
-    if cond' /= 0
-    then eval expr >>= evalWhile cond expr 
-    else return val
+eval (While cond expr) 
+  = whileM (eval cond >>= return . (/= 0)) (eval expr) >>= return . last
+
+{-
+  = evalWhile cond expr 0
+    where
+    evalWhile cond expr val = do
+      cond' <- eval cond
+      if cond' /= 0
+      then eval expr >>= evalWhile cond expr 
+      else return val
+-}
 
 eval (Binary op l r)
   = lookupMft op >>= \ mf -> mf (eval l) (eval r)
@@ -205,5 +211,16 @@ e9 = foldr1 (Binary Seq) $
       , Assign "r" (Binary Sub (Var "x") (Var "y"))
       , If (Const 0) (Var "r") (Var "x")
       ]
+
+e10 = foldr1 (Binary Seq) $
+        [ Assign "x" (Const 10)
+        , Assign "y" (Const  5)
+        , While (Var "y")
+            (Binary Seq
+              (Assign "y" (Binary Sub (Var "y")
+                                    (Const 1)))
+              (Assign "x" (Binary Sub (Var "x")
+                                    (Const 1))))
+        ]
 
 -- ----------------------------------------
