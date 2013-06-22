@@ -10,8 +10,8 @@ module Expr8 where
 import Control.Monad          ( liftM2 )
 import Control.Monad.Error    ( MonadError ( .. ) )
 import Control.Monad.State    ( MonadState ( .. ) )
-import Data.AssocList         ( addEntry )
-import Control.Monad.Loops    ( whileM )
+import Data.AssocList         ( addEntry )          -- hxt
+import Control.Monad.Loops    ( whileM )            -- monad-loops
 import Control.Monad.IO.Class ( MonadIO ( .. ) )
 
 
@@ -191,8 +191,8 @@ divM ma mb = do
 evalEnv     :: Expr -> VState -> IO (ResVal Int)
 evalEnv e s  = unRes (eval e) s >>= return . fst
 
-evalEinfachSo  :: Expr -> IO (ResVal Int)
-evalEinfachSo = flip evalEnv []
+-- Weil ich keine Lust habe, immer [] zu tippen
+emptyEval = flip evalEnv []
 
 
 -- ----------------------------------------
