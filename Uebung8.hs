@@ -126,19 +126,9 @@ eval (If cond e1 e2) = do
 -- Returns the value of the last execution of the expr block.
 eval (While cond expr) 
   = whileM 
-      (eval cond >>= return . (/= 0)) 
-      (eval expr) 
+      (eval cond >>= return . (/= 0))
+      (eval expr)
     >>= return . last
-
-{-
-  = evalWhile cond expr 0
-    where
-    evalWhile cond expr val = do
-      cond' <- eval cond
-      if cond' /= 0
-      then eval expr >>= evalWhile cond expr 
-      else return val
--}
 
 eval (Binary op l r)
   = lookupMft op >>= \ mf -> mf (eval l) (eval r)
