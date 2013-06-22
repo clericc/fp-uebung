@@ -14,6 +14,7 @@ import Control.Monad.Error ( MonadError ( .. ) )
 import Control.Monad.State ( MonadState ( .. ) )
 import Data.AssocList      ( addEntry )
 import Control.Monad.Loops ( whileM )
+import Control.Monad.IO.Class    ( MonadIO ( .. ) )
 
 -- ----------------------------------------
 -- syntactic domains
@@ -24,6 +25,8 @@ data Expr  = Const  Int
            | If     Expr  Expr Expr
            | While  Expr  Expr
            | Binary BinOp Expr Expr
+           | Read
+           | Write  String Expr
              deriving (Show)
 
 data BinOp = Add | Sub | Mul | Div | Mod | Seq
@@ -35,7 +38,7 @@ type Id    = String
 -- semantic domains
 
 newtype Result a
-           = Res { unRes :: VState -> (ResVal a, VState) }
+           = Res { unRes :: VState -> IO (ResVal a, VState) }
 
 data ResVal a
            = Val { val :: a }
@@ -52,35 +55,43 @@ instance Monad ResVal where
 
 instance Monad Result where
   -- Wrap a value in ResVal ignore any incoming environment since the value is constant
-  return x      = Res $ \ state -> (return x, state)
+  return x      = Res $ \ state -> return (return x, state)
 
-  (Res f) >>= g = Res $ \ state -> let (val,state') = f state 
-                                   in  case val of
+  (Res f) >>= g = Res $ \ state -> f state >>= \ (val,state') ->
+                                       case val of
                                          (Val   v) -> unRes (g v) state'
-                                         (Exc msg) -> (Exc msg, state')
+                                         (Exc msg) -> return (Exc msg, state')
 
+  (Res f) >>= g = Res $ \ state -> f state >>= \ (val, state') -> 
+                                       case val of
+                                         (Val   v) -> unRes (g v) state'
+                                         (Exc msg) -> return (Exc msg, state')
 
 instance MonadError String Result where
   -- wrap an exception string and ignore any environment
-  throwError  msg  = Res $ \ state -> (Exc msg, state)
+  throwError  msg  = Res $ \ state -> return (Exc msg, state)
 
   -- If f throws an Error, the handler is applied, otherwise ignored
   catchError (Res f) handler
-                = Res $ \ state -> case f state of
-                                     (Exc e, state') -> unRes (handler e) state'
-                                     (Val v, state') -> (Val v, state')
+                   = Res $ \ state -> f state >>= \ (val, state') -> case val of
+                                        (Exc e) -> unRes (handler e) state'
+                                        (Val v) -> return (Val v, state')
 
 
 instance MonadState VState Result where
   -- wrap any environment into the monad
-  get       = Res $ \ state -> (return state, state)
+  get       = Res $ \ state -> return (return state, state)
 
   -- ignore the existing state, replacing it with the new one
-  put state = Res $ \ _ -> (return (), state)
+  put state = Res $ \ _ -> return (return (), state)
 
   -- wrap a non-monad state action into the Monad
-  state f   = Res $ \ state -> let (val, state') = f state
-                               in  (return val, state')
+  state f   = Res $ \ state -> let (val, state') = f state in return (return val, state')
+
+
+instance MonadIO Result where
+  -- extract the value from the IO action and rewrap it into Result, keeping the IO state
+  liftIO a  = Res $ \ state -> a >>= \ a' -> return (return a', state)
 
 -- ----------------------------------------
 -- the meaning of an expression
@@ -127,6 +138,13 @@ eval (While cond expr)
 eval (Binary op l r)
   = lookupMft op >>= \ mf -> mf (eval l) (eval r)
 
+eval (Read)
+  = liftIO readLn
+
+eval (Write msg expr) = do
+  val <- eval expr
+  liftIO . print $ msg ++ (show val)
+  return val
 
 
 -- ----------------------------------------
@@ -167,8 +185,8 @@ divM ma mb = do
 -- ----------------------------------------
 -- expression evaluator with outer environment
 
-evalEnv  :: Expr -> VState -> ResVal Int
-evalEnv e  = fst . unRes (eval e)
+evalEnv     :: Expr -> VState -> IO (ResVal Int)
+evalEnv e s  = unRes (eval e) s >>= return . fst
 
 -- ----------------------------------------
 -- sample expressions
