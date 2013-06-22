@@ -125,7 +125,10 @@ eval (If cond e1 e2) = do
 -- Repeat an action until cond is zero.
 -- Returns the value of the last execution of the expr block.
 eval (While cond expr) 
-  = whileM (eval cond >>= return . (/= 0)) (eval expr) >>= return . last
+  = whileM 
+      (eval cond >>= return . (/= 0)) 
+      (eval expr) 
+    >>= return . last
 
 {-
   = evalWhile cond expr 0
