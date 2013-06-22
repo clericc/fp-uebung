@@ -7,14 +7,13 @@
 
 module Expr8 where
 
--- import Data.Maybe ( fromMaybe )
+import Control.Monad          ( liftM2 )
+import Control.Monad.Error    ( MonadError ( .. ) )
+import Control.Monad.State    ( MonadState ( .. ) )
+import Data.AssocList         ( addEntry )
+import Control.Monad.Loops    ( whileM )
+import Control.Monad.IO.Class ( MonadIO ( .. ) )
 
-import Control.Monad       ( liftM2 )
-import Control.Monad.Error ( MonadError ( .. ) )
-import Control.Monad.State ( MonadState ( .. ) )
-import Data.AssocList      ( addEntry )
-import Control.Monad.Loops ( whileM )
-import Control.Monad.IO.Class    ( MonadIO ( .. ) )
 
 -- ----------------------------------------
 -- syntactic domains
@@ -32,7 +31,6 @@ data Expr  = Const  Int
 data BinOp = Add | Sub | Mul | Div | Mod | Seq
              deriving (Eq, Show)
 
-type Id    = String
 
 -- ----------------------------------------
 -- semantic domains
@@ -41,14 +39,18 @@ newtype Result a
            = Res { unRes :: VState -> IO (ResVal a, VState) }
 
 data ResVal a
-           = Val { val :: a }
-           | Exc { exc :: String }
+           = Val a
+           | Exc String
              deriving (Show)
 
 type VState   = [(Id, Int)]
 
+type Id = String
+
+
 instance Monad ResVal where
   return        = Val
+  fail          = Exc
   (Exc e) >>= _ = Exc e
   (Val v) >>= g = g v
 
@@ -57,25 +59,23 @@ instance Monad Result where
   -- Wrap a value in ResVal ignore any incoming environment since the value is constant
   return x      = Res $ \ state -> return (return x, state)
 
-  (Res f) >>= g = Res $ \ state -> f state >>= \ (val,state') ->
-                                       case val of
-                                         (Val   v) -> unRes (g v) state'
-                                         (Exc msg) -> return (Exc msg, state')
+  fail msg      = Res $ \ state -> return (fail msg, state)
 
   (Res f) >>= g = Res $ \ state -> f state >>= \ (val, state') -> 
-                                       case val of
-                                         (Val   v) -> unRes (g v) state'
-                                         (Exc msg) -> return (Exc msg, state')
+                                     case val of
+                                       (Val   v) -> unRes (g v) state'
+                                       (Exc msg) -> return (Exc msg, state')
 
 instance MonadError String Result where
   -- wrap an exception string and ignore any environment
-  throwError  msg  = Res $ \ state -> return (Exc msg, state)
+  throwError  msg  = Res $ \ state -> return (fail msg, state)
 
   -- If f throws an Error, the handler is applied, otherwise ignored
   catchError (Res f) handler
-                   = Res $ \ state -> f state >>= \ (val, state') -> case val of
-                                        (Exc e) -> unRes (handler e) state'
-                                        (Val v) -> return (Val v, state')
+                   = Res $ \ state -> f state >>= \ (val, state') -> 
+                                        case val of
+                                          (Exc e) -> unRes (handler e) state'
+                                          (Val v) -> return (Val v, state')
 
 
 instance MonadState VState Result where
@@ -83,15 +83,17 @@ instance MonadState VState Result where
   get       = Res $ \ state -> return (return state, state)
 
   -- ignore the existing state, replacing it with the new one
-  put state = Res $ \ _ -> return (return (), state)
+  put state = Res $ \   _   -> return (return (), state)
 
   -- wrap a non-monad state action into the Monad
-  state f   = Res $ \ state -> let (val, state') = f state in return (return val, state')
+  state f   = Res $ \ state -> let (val, state') = f state 
+                               in  return (return val, state')
 
 
 instance MonadIO Result where
   -- extract the value from the IO action and rewrap it into Result, keeping the IO state
   liftIO a  = Res $ \ state -> a >>= \ a' -> return (return a', state)
+
 
 -- ----------------------------------------
 -- the meaning of an expression
@@ -182,11 +184,16 @@ divM ma mb = do
   then throwError "division by zero"
   else return (x `div` y)
 
+
 -- ----------------------------------------
 -- expression evaluator with outer environment
 
 evalEnv     :: Expr -> VState -> IO (ResVal Int)
 evalEnv e s  = unRes (eval e) s >>= return . fst
+
+evalEinfachSo  :: Expr -> IO (ResVal Int)
+evalEinfachSo = flip evalEnv []
+
 
 -- ----------------------------------------
 -- sample expressions
@@ -241,4 +248,12 @@ e10 = foldr1 (Binary Seq) $
                                     (Const 1))))
         ]
 
+e11 = Write "Hier kommt raus: "
+        (Binary Seq
+          (Assign "x" (Const 5))
+          (Var "x"))
+
+e12 = Binary Seq
+        (Assign "x" Read)
+        (Write "x ist: " (Var "x"))
 -- ----------------------------------------
