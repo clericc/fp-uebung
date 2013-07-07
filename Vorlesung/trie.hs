@@ -64,6 +64,9 @@ top trie  = (trie , Top)
 down     :: k -> TrieLoc k v -> TrieLoc k v
 down char (Trie value children , ctx)
   = case lookup char children
+  
+up :: TrieLoc k v -> TrieLoc k v
+up (t, Sub m k l c) = (Trie m (k, t):l, c)
 
 
 
