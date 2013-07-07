@@ -72,9 +72,14 @@ down k (Trie value children , ctx)
 
   
 up :: TrieLoc k v -> TrieLoc k v
-up (t, Sub m k l c) = (Trie m (k, t):l, c)
+up (t, Sub m k l c) = (Trie m ((k, t):l), c)
 
+upmost :: TrieLoc k v -> TrieLoc k v
+upmost (t, Top) = (t, Top)
+upmost z = upmost $ up z
 
+modify :: (Trie k v -> Trie k v) -> TrieLoc k v -> TrieLoc k v
+modify f (t, c) = (f t, c)
 
 trie1 = foldr (\ (k,v) -> (insertTrie k v .) ) id
 
