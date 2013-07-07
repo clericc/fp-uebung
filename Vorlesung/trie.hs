@@ -70,9 +70,10 @@ down k (Trie value children , ctx)
       Just subtree ->
         (subtree , Sub value k (delEntry k children) ctx)
 
-  
+
 up :: TrieLoc k v -> TrieLoc k v
-up (t, Sub m k l c) = (Trie m (k, t):l, c)
+up (trie, Sub value key children ctx)
+  = (Trie value ((key,trie):children), ctx)
 
 
 
