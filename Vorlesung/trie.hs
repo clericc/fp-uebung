@@ -42,7 +42,7 @@ insertTrie     [] e (Trie value children)
   = Trie (Just e) children
 insertTrie (k:ks) e (Trie value children)
   = case lookup k children of
-      Nothing      ->
+      Nothing ->
         Trie value (addEntry k (insertTrie ks e emptyTrie) children)
       Just subtree ->
         Trie value (addEntry k (insertTrie ks e subtree) children)
@@ -58,12 +58,18 @@ find (k:ks) (Trie _ children)
 -- ------------------------------------------------------
 -- zipper functions on tries
 
-top      :: Trie k v -> TrieLoc k v
-top trie  = (trie , Top)
+top :: Trie k v -> TrieLoc k v
+top trie
+  = (trie , Top)
 
-down     :: k -> TrieLoc k v -> TrieLoc k v
-down char (Trie value children , ctx)
-  = case lookup char children
+down :: Eq k => k -> TrieLoc k v -> TrieLoc k v
+down k (Trie value children , ctx)
+  = case lookup k children of
+      Nothing ->
+        error "no path for key element"
+      Just subtree ->
+        (subtree , Sub value k (delEntry k children) ctx)
+
   
 up :: TrieLoc k v -> TrieLoc k v
 up (t, Sub m k l c) = (Trie m (k, t):l, c)
