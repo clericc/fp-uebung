@@ -3,20 +3,21 @@ module TrieZipper where
 import Data.AssocList
 import Data.Char
 
--- ------------------------------------------------------
+-- ------------------------------------------------------------------
 -- syntactic domains
 
 data Trie k v = Trie (Maybe v) [(k,Trie k v)]
 
 data TrieCtx k v = Top
                  | Sub (Maybe v) k [(k,Trie k v)] (TrieCtx k v)
+                   deriving Show
 
 type TrieLoc  k v = (Trie k v, TrieCtx k v)
 type StringTrie a = TrieCtx Char a
 type StringLoc  a = TrieLoc Char a
 
--- ------------------------------------------------------
--- helper instances
+-- ------------------------------------------------------------------
+-- semantic string representations
 
 instance (Show k, Show v) => Show (Trie k v) where
   show = show' ""
@@ -26,12 +27,19 @@ instance (Show k, Show v) => Show (Trie k v) where
       show' indent (Trie  Nothing xs)
         = xs >>= \ (k,v) ->
             "\n" ++ indent ++ "-- " ++ (show k) ++ "" ++ show' (indent ++ "  ") v
-
       show' indent (Trie (Just v) xs)
         = indent ++ "=> " ++ show v ++ show' indent (Trie Nothing xs)
 
+{-
+instance (Show k, Show v) => Show (TrieCtx k v) where
+  show = snd . show' ""
+  where
+  show' indent (Top)
+    = (indent ++ "  ", "Top")
+  show' indent (Sub Nothing k )
+--}
 
--- ------------------------------------------------------
+-- ------------------------------------------------------------------
 -- functions on tries
 
 emptyTrie :: Eq k => Trie k v
@@ -55,7 +63,7 @@ find (k:ks) (Trie _ children)
       Nothing -> Nothing
       Just subtree -> find ks subtree
 
--- ------------------------------------------------------
+-- ------------------------------------------------------------------
 -- zipper functions on tries
 
 top :: Trie k v -> TrieLoc k v
@@ -70,12 +78,12 @@ down k (Trie value children , ctx)
       Just subtree ->
         (subtree , Sub value k (delEntry k children) ctx)
 
-
 up :: TrieLoc k v -> TrieLoc k v
 up (trie, Sub value key children ctx)
   = (Trie value ((key,trie):children), ctx)
 
-
+-- ------------------------------------------------------------------
+-- test tries
 
 trie1 = foldr (\ (k,v) -> (insertTrie k v .) ) id
 
