@@ -6,19 +6,19 @@ import Data.Char
 -- ------------------------------------------------------
 -- syntactic domains
 
-data Trie i a = Trie (Maybe a) [(i,Trie i a)]
+data Trie k v = Trie (Maybe v) [(k,Trie k v)]
 
-data TrieCtx i a = Top
-                 | Sub (Maybe a) [(i,Trie i a)] (TrieCtx i a)
+data TrieCtx k v = Top
+                 | Sub (Maybe v) k [(k,Trie k v)] (TrieCtx k v)
 
-type TrieLoc  i a = (Trie i a, TrieCtx i a)
+type TrieLoc  k v = (Trie k v, TrieCtx k v)
 type StringTrie a = TrieCtx Char a
 type StringLoc  a = TrieLoc Char a
 
 -- ------------------------------------------------------
 -- helper instances
 
-instance (Show i, Show a) => Show (Trie i a) where
+instance (Show k, Show v) => Show (Trie k v) where
   show = show' ""
     where
       show' indent (Trie  Nothing []) = " => "
@@ -34,10 +34,10 @@ instance (Show i, Show a) => Show (Trie i a) where
 -- ------------------------------------------------------
 -- functions on tries
 
-emptyTrie :: Eq k => Trie k a
+emptyTrie :: Eq k => Trie k v
 emptyTrie  = Trie Nothing []
 
-insertTrie :: Eq i => [i] -> a -> Trie i a -> Trie i a
+insertTrie :: Eq k => [k] -> v -> Trie k v -> Trie k v
 insertTrie     [] e (Trie value children)
   = Trie (Just e) children
 insertTrie (k:ks) e (Trie value children)
@@ -47,7 +47,7 @@ insertTrie (k:ks) e (Trie value children)
       Just subtree ->
         Trie value (addEntry k (insertTrie ks e subtree) children)
 
-find :: Eq i => [i] -> Trie i a -> Maybe a
+find :: Eq k => [k] -> Trie k v -> Maybe v
 find [] (Trie value _)
   = value
 find (k:ks) (Trie _ children)
@@ -58,11 +58,12 @@ find (k:ks) (Trie _ children)
 -- ------------------------------------------------------
 -- zipper functions on tries
 
-top :: Trie k v -> TrieLoc k v
-top trie = (trie, Top)
+top      :: Trie k v -> TrieLoc k v
+top trie  = (trie , Top)
 
-down :: k -> TrieLoc k v -> TrieLoc k v
-down k
+down     :: k -> TrieLoc k v -> TrieLoc k v
+down char (Trie value children , ctx)
+  = case lookup char children
 
 
 
