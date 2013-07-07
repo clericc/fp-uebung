@@ -77,10 +77,21 @@ down k (Trie value children , ctx)
         error "no path for key element"
       Just subtree ->
         (subtree , Sub value k (delEntry k children) ctx)
+        
+downMul :: Eq k => [k] -> TrieLoc k v -> TrieLoc k v
+downMul [] t = t
+downMul (x:xs) t = downMul xs (down x t)
 
 up :: TrieLoc k v -> TrieLoc k v
 up (trie, Sub value key children ctx)
   = (Trie value ((key,trie):children), ctx)
+  
+upmost :: TrieLoc k v -> TrieLoc k v
+upmost (t, Top) = (t, Top)
+upmost z = upmost $ up z
+
+modify :: (Trie k v -> Trie k v) -> TrieLoc k v -> TrieLoc k v
+modify f (t, c) = (f t, c)
 
 -- ------------------------------------------------------------------
 -- test tries
@@ -98,3 +109,12 @@ trie1 = foldr (\ (k,v) -> (insertTrie k v .) ) id
 
   $ emptyTrie
 
+
+trie2 = foldr (\ (k,v) -> (insertTrie k v .) ) id
+
+  [("", "empty"),
+   ("rose", "rot"),
+   ("rodeo", "cowboy"),
+   ("raser", "auto")
+  ]
+  $ emptyTrie
