@@ -237,7 +237,7 @@ myDisk =
             [ File "hello.exe" "print('Hello World')"
             , File "hack.bat" "open('iexplorer.exe')"
             , File "not_a_virus.exe" "really not a virus"
-            , Folder "source code"
+            , Folder "source_code"
                 [ File "best_hs_prog.hs" "main = print (fix error)"
                 , File "random.hs" "main = print 4"
                 ]
