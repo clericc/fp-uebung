@@ -23,8 +23,6 @@ data FSCtx = Root
 
 type FSZipper = (FSItem, FSCtx)
 
--- ------------------------------------------------------------------
--- monad stuff
 
 type FsOps a = StateT FSZipper IO a
 
@@ -58,6 +56,16 @@ mkdir name = do
       if name `fselem` items
       then liftIO (putStrLn "name exists already, ignore") >> return 2
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
+      
+cd :: Name -> FsOps ReturnCode
+cd name = do
+  l@(currItem, ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "focus on file, ignore") >> return 1
+    (Folder fname items) ->
+      if name `fselem` items
+      then put ( down name l ) >> return 0
+      else liftIO (putStrLn "invalid destination, ignore") >> return 2
 
 
 
