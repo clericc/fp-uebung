@@ -16,16 +16,23 @@ type FSZipper = (FSItem, FSCtx)
 
 -- ------------------------------------------------------------------
 -- command line operations
+--{-
 
-touch :: Name -> FSZipper -> IO FSZipper
-touch x@(item, ctx) = case item of
-    (File _ _) = do
-        print "focus is on file, do nothing"
+newfile :: Name -> Data -> FSZipper -> IO FSZipper
+newfile newFileName x@(item, ctx) = case item of
+    (File _ _) -> do
+        putStrLn "focus is on file, do nothing"
         return x
-    (Folder name items) = do
-        case lookup name items of
-            Nothing -> return ()
 
+    (Folder name items) ->
+        case lookup name items of
+            Nothing -> return (Folder name (File newFileName Data):items, ctx)
+            Just file -> do
+                putStrLn "file exists already, do nothing"
+                return x
+
+
+--}
 -- ------------------------------------------------------------------
 -- syntactic domains / backend operations
 
@@ -39,7 +46,8 @@ down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
-modify :: FSZipper -> FSZipper
+modify :: (i -> i) -> FSZipper -> FSZipper
+modify f (item, ctx) = (f item, ctx)
 
 
 isName :: Name -> FSItem -> Bool
@@ -49,7 +57,7 @@ isName n (File fn d) = n == fn
 
 --Concats Data to File
 (>>) :: Data -> Name -> FSZipper -> IO FSZipper
-nd >> (Folder fn fl, c) = touch (Folder fn fl, c)
+nd >> (Folder fn fl, c) = newfile (Folder fn fl, c)
 
 
 nd >> (File fn d, c) = return (File fn (nd ++ d), c)
@@ -59,24 +67,24 @@ nd >> (File fn d, c) = return (File fn (nd ++ d), c)
 (>) :: Data -> Name -> FSZipper -> IO FSZipper
 nd > (File fn d, c) = return (File fn nd, c)
 
-myDisk :: FSItem  
-myDisk = 
-    Folder "root"   
-        [ File "hello.txt" "Hallo Welt"  
-        , File "fp.hs" "insert mega cool Haskell Code here"  
-        , Folder "pics"  
-            [ File "cat.jpg" "Awwww"  
-            , File "cat.gif" "OMG so cute!!"  
-            , File "cat.bmp" "AWWWWWWWWWWWWWWW"  
-            ]  
-        , File "cookies.pdf" "nomnomnom"  
-        , Folder "programs"  
-            [ File "hello.exe" "print('Hello World')"  
-            , File "hack.bat" "open('iexplorer.exe')"  
-            , File "not_a_virus.exe" "really not a virus"  
-            , Folder "source code"  
-                [ File "best_hs_prog.hs" "main = print (fix error)"  
-                , File "random.hs" "main = print 4"  
-                ]  
-            ]  
-        ]  
+myDisk :: FSItem
+myDisk =
+    Folder "root"
+        [ File "hello.txt" "Hallo Welt"
+        , File "fp.hs" "insert mega cool Haskell Code here"
+        , Folder "pics"
+            [ File "cat.jpg" "Awwww"
+            , File "cat.gif" "OMG so cute!!"
+            , File "cat.bmp" "AWWWWWWWWWWWWWWW"
+            ]
+        , File "cookies.pdf" "nomnomnom"
+        , Folder "programs"
+            [ File "hello.exe" "print('Hello World')"
+            , File "hack.bat" "open('iexplorer.exe')"
+            , File "not_a_virus.exe" "really not a virus"
+            , Folder "source code"
+                [ File "best_hs_prog.hs" "main = print (fix error)"
+                , File "random.hs" "main = print 4"
+                ]
+            ]
+        ]
