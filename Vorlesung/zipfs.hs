@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 
-module Filesystem where
+module Main where
 
 import Control.Monad.State
 
@@ -25,7 +25,6 @@ type FSZipper = (FSItem, FSCtx)
 
 
 type FsOps a = StateT FSZipper IO a
-
  
 -- ------------------------------------------------------------------
 -- command line operations
@@ -55,7 +54,7 @@ mkdir name = do
     (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
     (Folder fname items) -> 
       if name `fselem` items
-      then liftIO (putStrLn "*** name exists already, do ignore") >> return 2
+      then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
       
 cd :: Name -> FsOps ReturnCode
@@ -92,7 +91,20 @@ cat name = do
 
 
 ls :: FsOps ReturnCode
-ls = undefined
+ls = do
+  (currItem , ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (Folder _ items) ->
+      mapM_ (liftIO . putStrLn . showName) items >> return 0
+
+{-
+rename :: Name -> Name -> FsOps ReturnCode
+rename oldName newName = do
+  (currItem , ctx) <- get
+  case currItem of
+    (File name content) -> 
+-}
 
 
 
@@ -107,6 +119,28 @@ fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 --(:->>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
 
 --}
+
+-- ------------------------------------------------------------------
+-- backend operations
+
+bashFS = runStateT bash myDiskState
+
+bash :: FsOps ()
+bash = do
+  cmd <- liftIO getLine
+  case words cmd of
+    ["ls"]                    -> ls
+    ["cd", name]              -> cd name
+--    ["rename", fname, nname]  -> rename fname nname
+    ["newFile", fname, fdata] -> newFile fname fdata
+    ["mkdir", name]           -> mkdir name 
+    _                         -> liftIO $ putStrLn "unknown operation"  >> return 0
+  bash
+
+
+main = bashFS
+
+
 -- ------------------------------------------------------------------
 -- backend operations
 --{-
@@ -136,6 +170,9 @@ isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
+showName :: FSItem -> String
+showName (Folder name _) = name
+showName (File   name _) = name
 
 mkFile :: Name -> Data -> FSItem
 mkFile = File
