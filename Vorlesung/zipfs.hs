@@ -28,120 +28,85 @@ type FsOps a = StateT FSZipper IO a
  
 -- ------------------------------------------------------------------
 -- command line operations
---{-
 
 newFile :: Name -> Data -> FsOps ReturnCode
-newFile newFileName newFileData = do
-  (currItem , ctx) <- get
-  case currItem of
-    (File _ _) -> do
-      liftIO $ putStrLn "*** focus is on file, do nothing"
-      return 1
-    (Folder fname items) ->
-      if newFileName `fselem` items  -- Name schon vorhanden?
-      then do
-        liftIO $ putStrLn "*** file or folder exists already, do nothing"
-        return 2
-      else do
-        put (Folder fname (mkFile newFileName newFileData : items), ctx)
-        return 0
+newFile name content = applyToFolder $ \ ( (Folder fname fcontent) , ctx) ->
+  if name `fselem` fcontent  -- Name schon vorhanden?
+  then do
+    liftIO $ putStrLn "*** file or folder exists already, do nothing"
+    return 2
+  else do
+    put (Folder fname (mkFile name content : fcontent), ctx)
+    return 0
 
-touch name = newFile name ""
+
+touch      :: Name -> FsOps ReturnCode
+touch name  = newFile name ""
 
 
 mkdir :: Name -> FsOps ReturnCode
-mkdir name = do
-  (currItem , ctx) <- get
-  case currItem of
-    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder fname items) -> 
-      if name `fselem` items
-      then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
-      else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
+mkdir name = applyToFolder $ \ ( (Folder fname fcontent) , ctx) ->
+  if name `fselem` fcontent
+  then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
+  else put ( Folder fname (mkFolder name : fcontent) , ctx) >> return 0
       
 
 cd :: Name -> FsOps ReturnCode
 cd "/" = get >>= (put . upmost) >> return 0
 cd ".." = get >>= (put . up) >> return 0
-cd name = do
-  l@(currItem, ctx) <- get
-  case currItem of
-    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder fname items) ->
-      if not $ name `fselem` items
-      then liftIO (putStrLn "invalid destination, ignore") >> return 2
-      else
-        let obj = down name l
-        in case obj of
-          (File _ _, c) -> liftIO (putStrLn "is file") >> return 3
-          (Folder fn i, c) -> put (obj) >> return 0
+cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
+  if not . fselem name $ content
+  then liftIO (putStrLn "invalid destination, ignore") >> return 2
+  else
+    let obj = down name zipper
+    in case obj of
+      (File _ _, c) -> liftIO (putStrLn "is file") >> return 3
+      (Folder fn i, c) -> put (obj) >> return 0
 
 
 cat :: Name -> FsOps ReturnCode
-cat name = do
-  l@(currItem, ctx) <- get
-  case currItem of
-    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder fname items) ->
-      if not $ name `fselem` items
-      then liftIO (putStrLn "invalid filename") >> return 2
-      else
-        let obj = down name l
-        in case obj of
-          (File n d, c) -> liftIO (putStrLn d) >> return 0
-          (Folder fn i, c) -> liftIO (putStrLn ("cat: " ++ fn ++ "/ is directory")) >> return 3
+cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
+  if not . fselem name $ content
+  then liftIO (putStrLn "invalid filename") >> return 2
+  else
+    let obj = down name zipper
+    in case obj of
+      (File n d, c) -> liftIO (putStrLn d) >> return 0
+      (Folder fn i, c) -> liftIO (putStrLn ("cat: " ++ fn ++ "/ is directory")) >> return 3
           
-fsAppend :: Name -> Data -> FsOps ReturnCode
-fsAppend name dat = do
-  l@(currItem, ctx) <- get
-  case currItem of
-    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder fname items) ->
-      if not $ name `fselem` items
-      then liftIO (putStrLn "invalid filename") >> return 2
-      else
-        let obj = down name l
-        in case obj of
-          (File n d, c) -> put (up $ fsattach dat obj) >> return 0
-          (Folder fn i, c) -> liftIO (putStrLn ("target is a directory!")) >> return 3
 
+fileAppend :: Name -> Data -> FsOps ReturnCode
+fileAppend name dat = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
+  if not . fselem name $ content
+  then liftIO (putStrLn "invalid filename") >> return 2
+  else
+    let obj = down name zipper
+    in case obj of
+      (File n d, c) -> put (up $ fsattach dat obj) >> return 0
+      (Folder fn i, c) -> liftIO (putStrLn ("target is a directory!")) >> return 3
 
 
 ls :: FsOps ReturnCode
-ls = do
-  (currItem , ctx) <- get
-  case currItem of
-    (File _ _)       -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder _ items) ->
-      mapM_ (liftIO . putStrLn . showName) items >> return 0
+ls = applyToFolder $ \ ( (Folder name content) , ctx) ->
+  mapM_ (liftIO . putStrLn . showName) content >> return 0
 
---{-
+
 mv :: Name -> Name -> FsOps ReturnCode
-mv oldName newName = do
-  (currItem , ctx) <- get
+mv oldName newName = applyToFolder $ \ (currItem, ctx) ->  
+  let newContent = (up . modify (rename newName) . down oldName) (currItem, ctx)
+  in  put newContent >> return 0
+
+
+-- provides the guarantee to work on a Folder. If the Zipper focus is on a
+-- file, throw an error message and continue as if nothing happened
+applyToFolder ::  (FSZipper -> FsOps ReturnCode) -> FsOps ReturnCode
+applyToFolder f = do
+  zipper@(currItem , ctx) <- get
   case currItem of
     (File      _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
-    (Folder name _) -> 
-      let newContent = (up . modify (rename newName) . down oldName) (currItem, ctx)
-      in  put newContent >> return 0
-
---}
+    _          -> f zipper
 
 
-blaaa ::  (FSItem -> FsOps ReturnCode) -> FSZipper -> FsOps ReturnCode
-blaaa 
-
-
-
-
-
---Concats Data to File
-
---(:->>) :: Data -> Name -> FSZipper -> IO FSZipper
---(:->>) nd n (Folder fn fl, c) = (newFile n "" (Folder fn fl, c)) >>= (fsConcat nd)
---(:->>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
-
---}
 
 -- ------------------------------------------------------------------
 -- backend operations
@@ -160,23 +125,23 @@ bash = do
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
     ["cat", name]             -> cat name
-    [dat, ">>", name]         -> fsAppend name dat
+    [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
       let (ls, rs) = break (">>"==) $ words cmd
       in 
       if (null rs) || (null (tail rs))
       then liftIO $ putStrLn "unknown operation"  >> return 0
-      else fsAppend (last rs) (concatPlus ls ' ')
+      else fileAppend (last rs) (concatPlus ls ' ')
   bash
 
 
 main = bashFS
 
 
+
 -- ------------------------------------------------------------------
 -- backend operations
---{-
 
 concatPlus :: [[a]] -> a -> [a]
 concatPlus [x] v = x
@@ -209,10 +174,10 @@ rename :: Name -> FSItem -> FSItem
 rename newName (File   name content) = File   newName content
 rename newName (Folder name content) = Folder newName content
 
---}
+
+
 -- ------------------------------------------------------------------
 -- zipper operations
-
 
 top :: FSItem -> FSZipper
 top x = (x, Root)
@@ -233,6 +198,8 @@ down n (Folder fn fl, c) = (x, Dir fn ls rs c)
 --Uses a given function to modify the focused element
 modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
 modify f (i, c) = (f i, c)
+
+
 
 -- ------------------------------------------------------------------
 -- sample file system
