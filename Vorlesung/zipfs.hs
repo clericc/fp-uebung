@@ -24,7 +24,6 @@ type FsOps a = State FSZipper a
 -- command line operations
 --{-
 
-
 newFile :: Name -> Data -> FSZipper -> IO FSZipper
 newFile newFileName newFileData x@(item, ctx)
   = case item of
@@ -42,16 +41,13 @@ newFile newFileName newFileData x@(item, ctx)
 --}
 -- ------------------------------------------------------------------
 -- backend operations
+--{-
 
 fselem :: Name -> [FSItem] -> Bool
 fselem name [] = False
 fselem name (x:xs) = case x of
   (File   n _) -> n == name || fselem name xs
   (Folder n _) -> n == name || fselem name xs
-
-{-
-
-
 
 top :: FSItem -> FSZipper
 top x = (x, Root)
@@ -72,7 +68,7 @@ mkFile :: Name -> Data -> FSItem
 mkFile = File
 
 mkFolder :: Name -> FSItem
-mkFolder = Folder
+mkFolder name = Folder name []
 
 modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
 modify f (i, c) = (f i, c)
@@ -82,9 +78,9 @@ fsConcat :: Data -> FSZipper -> IO FSZipper
 fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 
 --Concats Data to File
-(:->>) :: Data -> Name -> FSZipper -> IO FSZipper
-(:->>) nd n (Folder fn fl, c) = (newFile n (Folder fn fl, c)) >>= (fsConcat nd)
-(:->>) nd n (File fn d, c) = (newFile n (File d, c) >>= (fsConcat nd)
+(>>) :: Data -> Name -> FSZipper -> IO FSZipper
+(>>) nd n (Folder fn fl, c) = (newFile n "" (Folder fn fl, c)) >>= (fsConcat nd)
+(>>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
 
 --}
 -- ------------------------------------------------------------------
