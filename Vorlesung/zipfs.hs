@@ -87,6 +87,20 @@ cat name = do
         in case obj of
           (File n d, c) -> liftIO (putStrLn d) >> return 0
           (Folder fn i, c) -> liftIO (putStrLn ("cat: " ++ fn ++ "/ is directory")) >> return 3
+          
+fsAppend :: Name -> Data -> FsOps ReturnCode
+fsAppend name dat = do
+  l@(currItem, ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (Folder fname items) ->
+      if not $ name `fselem` items
+      then liftIO (putStrLn "invalid filename") >> return 2
+      else
+        let obj = down name l
+        in case obj of
+          (File n d, c) -> put (up $ fsattach dat obj) >> return 0
+          (Folder fn i, c) -> liftIO (putStrLn ("target is a directory!")) >> return 3
 
 
 
@@ -137,8 +151,14 @@ bash = do
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
     ["cat", name]             -> cat name
-    [
-    _                         -> liftIO $ putStrLn "unknown operation"  >> return 0
+    [dat, ">>", name]         -> fsAppend name dat
+    [dat, ">", name]          -> newFile name dat
+    _                         ->
+      let (ls, rs) = break (">>"==) $ words cmd
+      in 
+      if (null rs) || (null (tail rs))
+      then liftIO $ putStrLn "unknown operation"  >> return 0
+      else fsAppend (last rs) (concatPlus ls ' ')
   bash
 
 
@@ -149,19 +169,24 @@ main = bashFS
 -- backend operations
 --{-
 
+concatPlus :: [[a]] -> a -> [a]
+concatPlus [x] v = x
+concatPlus (x:xs) v = x ++ [v] ++ (concatPlus xs v)
+
 fselem :: Name -> [FSItem] -> Bool
 fselem name [] = False
 fselem name (x:xs) = case x of
   (File   n _) -> n == name || fselem name xs
   (Folder n _) -> n == name || fselem name xs
 
-
 mkFile :: Name -> Data -> FSItem
 mkFile = File
 
-
 mkFolder :: Name -> FSItem
 mkFolder name = Folder name []
+
+fsattach :: Data -> FSZipper -> FSZipper
+fsattach d = modify' (\(File fn fd) -> File fn (fd ++ d))
 
 isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
@@ -192,10 +217,9 @@ down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
 
-
 --Uses a given function to modify the focused element
-modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
-modify f (i, c) = (f i, c)
+modify' :: (FSItem -> FSItem) -> FSZipper -> FSZipper
+modify' f (i, c) = (f i, c)
 
 -- ------------------------------------------------------------------
 -- sample file system
