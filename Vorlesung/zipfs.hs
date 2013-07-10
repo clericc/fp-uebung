@@ -18,8 +18,8 @@ data FSItem = File Name Data
               deriving Show
 
 data FSCtx = Root
-           | Dir Name [FSItem] [FSItem] FSCtx
-             deriving Show
+            | Dir Name [FSItem] [FSItem] FSCtx
+              deriving Show
 
 type FSZipper = (FSItem, FSCtx)
 
