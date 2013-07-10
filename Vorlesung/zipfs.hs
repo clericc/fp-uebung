@@ -1,3 +1,7 @@
+module Filesystem where
+
+import Control.Monad.State
+
 -- ------------------------------------------------------------------
 -- syntactic domains
 
@@ -14,27 +18,37 @@ data FSCtx = Root
 
 type FSZipper = (FSItem, FSCtx)
 
+type FsOps a = State FSZipper a
+
 -- ------------------------------------------------------------------
 -- command line operations
 --{-
 
-newfile :: Name -> Data -> FSZipper -> IO FSZipper
-newfile newFileName x@(item, ctx) = case item of
-    (File _ _) -> do
-        putStrLn "focus is on file, do nothing"
-        return x
+withSampleFS = runState (myDisk, Root)
 
-    (Folder name items) ->
-        case lookup name items of
-            Nothing -> return (Folder name (File newFileName Data):items, ctx)
-            Just file -> do
-                putStrLn "file exists already, do nothing"
-                return x
+newfile :: Name -> Data -> FSZipper -> IO FSZipper
+newfile newFileName newFileData x@(item, ctx)
+    = case item of
+        (File _ _) -> do
+            putStrLn "focus is on file, do nothing"
+            return x
+        (Folder name items) ->
+            case lookup name items of
+                Nothing -> return (Folder name (File newFileName newFileData):items, ctx)
+                Just file -> do
+                    putStrLn "file exists already, do nothing"
+                    return x
+
+
+newFolder :: Name -> FSZipper -> IO FSZipper
+newFolder folderName x@(item, ctx)
+    = cas
+
 
 
 --}
 -- ------------------------------------------------------------------
--- syntactic domains / backend operations
+-- backend operations
 
 top :: FSItem -> FSZipper
 top x = (x, Root)
