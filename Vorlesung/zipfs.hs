@@ -1,15 +1,33 @@
-type Name = String  
-type Data = String  
-data FSItem = File Name Data 
-              | Folder Name [FSItem] deriving Show
+-- ------------------------------------------------------------------
+-- syntactic domains
+
+type Name = String
+type Data = String
+
+data FSItem = File Name Data
+            | Folder Name [FSItem]
+              deriving Show
 
 data FSCtx = Root
-            | Dir Name [FSItem] [FSItem] FSCtx
-            deriving Show
-
+           | Dir Name [FSItem] [FSItem] FSCtx
+             deriving Show
 
 type FSZipper = (FSItem, FSCtx)
 
+-- ------------------------------------------------------------------
+-- command line operations
+
+touch :: Name -> FSZipper -> IO FSZipper
+touch x@(item, ctx) = case item of
+    (File _ _) = do
+        print "focus is on file, do nothing"
+        return x
+    (Folder name items) = do
+        case lookup name items of
+            Nothing -> return ()
+
+-- ------------------------------------------------------------------
+-- syntactic domains / backend operations
 
 top :: FSItem -> FSZipper
 top x = (x, Root)
@@ -20,8 +38,10 @@ up (x, Dir n l r c) = (Folder n (l ++ [x] ++ r), c)
 down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
-  
-  
+
+modify :: FSZipper -> FSZipper
+
+
 isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
