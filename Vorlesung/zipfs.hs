@@ -33,26 +33,27 @@ top :: FSItem -> FSZipper
 top x = (x, Root)
 
 up :: FSZipper -> FSZipper
-up (x, Dir n l r c) = (Folder n (l ++ [x] ++ r), c)
+up (x, Dir n l r c) = (Folder n (l ++ x:r), c)
 
 down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
-modify :: FSZipper -> FSZipper
-
-
 isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
+modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
+modify f (i, c) = (f i, c)
+
+concat :: Data -> FSZipper -> IO FSZipper
+concat nd (File fn d, c) = return (File fn (d ++ dn), c)
+
 
 --Concats Data to File
 (>>) :: Data -> Name -> FSZipper -> IO FSZipper
-nd >> (Folder fn fl, c) = touch (Folder fn fl, c)
-
-
-nd >> (File fn d, c) = return (File fn (nd ++ d), c)
+nd >> n (Folder fn fl, c) = touch (Folder fn fl, c) >>= (concat nd)
+nd >> n (File fn d, c) = concat nd
 
 
 --Overwrites Data in File
