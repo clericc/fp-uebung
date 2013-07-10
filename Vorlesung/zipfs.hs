@@ -24,25 +24,23 @@ type FsOps a = State FSZipper a
 -- command line operations
 --{-
 
-withSampleFS = runState (myDisk, Root)
 
-newfile :: Name -> Data -> FSZipper -> IO FSZipper
-newfile newFileName newFileData x@(item, ctx)
-    = case item of
-        (File _ _) -> do
-            putStrLn "focus is on file, do nothing"
-            return x
-        (Folder name items) ->
-            case lookup name items of
-                Nothing -> return (Folder name (File newFileName newFileData):items, ctx)
-                Just file -> do
-                    putStrLn "file exists already, do nothing"
-                    return x
+newFile :: Name -> Data -> FSZipper -> IO FSZipper
+newFile newFileName newFileData x@(item, ctx)
+  = case item of
+    (File _ _) -> do
+      putStrLn "focus is on file, do nothing"
+      return x
+    (Folder name items) ->
+      if newFileName `elem` items  -- Name schon vorhanden?
+      then do
+        putStrLn "file or folder exists already, do nothing"
+        return x
+      else
+        return (Folder name (mkFile newFileName newFileData):items, ctx)
 
 
-newFolder :: Name -> FSZipper -> IO FSZipper
-newFolder folderName x@(item, ctx)
-    = cas
+
 
 
 
@@ -68,10 +66,16 @@ isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
+mkFile :: Name -> Data -> FSItem
+mkFile = File
+
+mkFolder :: Name -> FSItem
+mkFolder = Folder
+
 
 --Concats Data to File
 (>>) :: Data -> Name -> FSZipper -> IO FSZipper
-nd >> (Folder fn fl, c) = newfile (Folder fn fl, c)
+nd >> (Folder fn fl, c) = newFile (Folder fn fl, c)
 
 
 nd >> (File fn d, c) = return (File fn (nd ++ d), c)
