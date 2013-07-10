@@ -36,25 +36,26 @@ newFile newFileName newFileData = do
   (currItem , ctx) <- get
   case currItem of
     (File _ _) -> do
-      putStrLn "focus is on file, do nothing"
-      return x
-    (Folder name items) ->
+      liftIO $ putStrLn "*** focus is on file, do nothing"
+      return 1
+    (Folder fname items) ->
       if newFileName `fselem` items  -- Name schon vorhanden?
       then do
-        putStrLn "file or folder exists already, do nothing"
-        return x
-      else
-        return (Folder name (mkFile newFileName newFileData : items), ctx)
+        liftIO $ putStrLn "*** file or folder exists already, do nothing"
+        return 2
+      else do
+        put (Folder fname (mkFile newFileName newFileData : items), ctx)
+        return 0
 
 
 mkdir :: Name -> FsOps ReturnCode
 mkdir name = do
   (currItem , ctx) <- get
   case currItem of
-    (File _ _) -> liftIO (putStrLn "focus on file, ignore") >> return 1
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
     (Folder fname items) -> 
       if name `fselem` items
-      then liftIO (putStrLn "name exists already, ignore") >> return 2
+      then liftIO (putStrLn "*** name exists already, do ignore") >> return 2
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
       
 cd :: Name -> FsOps ReturnCode
@@ -66,6 +67,9 @@ cd name = do
       if name `fselem` items
       then put ( down name l ) >> return 0
       else liftIO (putStrLn "invalid destination, ignore") >> return 2
+
+ls :: FsOps ReturnCode
+ls = undefined
 
 
 
