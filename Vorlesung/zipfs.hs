@@ -27,9 +27,17 @@ isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
 
-concat :: Data -> FSZipper -> FSZipper
-concat d 
+--Concats Data to File
+(>>) :: Data -> Name -> FSZipper -> IO FSZipper
+nd >> (Folder fn fl, c) = touch (Folder fn fl, c)
 
+
+nd >> (File fn d, c) = return (File fn (nd ++ d), c)
+
+
+--Overwrites Data in File
+(>) :: Data -> Name -> FSZipper -> IO FSZipper
+nd > (File fn d, c) = return (File fn nd, c)
 
 myDisk :: FSItem  
 myDisk = 
