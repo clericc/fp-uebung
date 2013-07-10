@@ -1,3 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
+
 module Filesystem where
 
 import Control.Monad.State
@@ -7,6 +11,7 @@ import Control.Monad.State
 
 type Name = String
 type Data = String
+type ReturnCode = Int
 
 data FSItem = File Name Data
             | Folder Name [FSItem]
@@ -18,15 +23,20 @@ data FSCtx = Root
 
 type FSZipper = (FSItem, FSCtx)
 
-type FsOps a = State FSZipper a
+-- ------------------------------------------------------------------
+-- monad stuff
 
+type FsOps a = StateT FSZipper IO a
+
+ 
 -- ------------------------------------------------------------------
 -- command line operations
 --{-
 
-newFile :: Name -> Data -> FSZipper -> IO FSZipper
-newFile newFileName newFileData x@(item, ctx)
-  = case item of
+newFile :: Name -> Data -> FsOps ReturnCode
+newFile newFileName newFileData = do
+  (currItem , ctx) <- get
+  case currItem of
     (File _ _) -> do
       putStrLn "focus is on file, do nothing"
       return x
@@ -36,7 +46,30 @@ newFile newFileName newFileData x@(item, ctx)
         putStrLn "file or folder exists already, do nothing"
         return x
       else
-        return (Folder name ((File newFileName newFileData):items), ctx)
+        return (Folder name (mkFile newFileName newFileData : items), ctx)
+
+
+mkdir :: Name -> FsOps ReturnCode
+mkdir name = do
+  (currItem , ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "focus on file, ignore") >> return 1
+    (Folder fname items) -> 
+      if name `fselem` items
+      then liftIO (putStrLn "name exists already, ignore") >> return 2
+      else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
+
+
+
+fsConcat :: Data -> FSZipper -> IO FSZipper
+fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
+
+
+--Concats Data to File
+
+--(:->>) :: Data -> Name -> FSZipper -> IO FSZipper
+--(:->>) nd n (Folder fn fl, c) = (newFile n "" (Folder fn fl, c)) >>= (fsConcat nd)
+--(:->>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
 
 --}
 -- ------------------------------------------------------------------
@@ -74,17 +107,12 @@ modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
 modify f (i, c) = (f i, c)
 
 
-fsConcat :: Data -> FSZipper -> IO FSZipper
-fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
-
---Concats Data to File
-(>>) :: Data -> Name -> FSZipper -> IO FSZipper
-(>>) nd n (Folder fn fl, c) = (newFile n "" (Folder fn fl, c)) >>= (fsConcat nd)
-(>>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
-
 --}
 -- ------------------------------------------------------------------
 -- sample file system
+
+myDiskState :: FSZipper
+myDiskState  = (myDisk, Root)
 
 myDisk :: FSItem
 myDisk =
