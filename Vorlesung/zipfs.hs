@@ -57,12 +57,16 @@ mkdir name = do
     (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
     (Folder fname items) -> 
       if name `fselem` items
-      then liftIO (putStrLn "*** name exists already, do ignore") >> return 2
+      then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
 
 ls :: FsOps ReturnCode
-ls = undefined
-
+ls = do
+  (currItem , ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (Folder _ items) ->
+      mapM_ (liftIO . putStrLn . showName) items >> return 0
 
 
 fsConcat :: Data -> FSZipper -> IO FSZipper
@@ -100,6 +104,9 @@ isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
+showName :: FSItem -> String
+showName (Folder name _) = name
+showName (File   name _) = name
 
 mkFile :: Name -> Data -> FSItem
 mkFile = File
