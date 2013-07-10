@@ -123,18 +123,19 @@ applyToFolder f = do
 bashFS = runStateT bash myDiskState
 
 bash :: FsOps ()
-bash = do
+bash = do  
   (currItem, ctx) <- get
   liftIO . putStr . (++ " >> ") . showName $ currItem
   cmd <- liftIO getLine
   case words cmd of
-    ["ls"]                    -> ls
-    ["cd", name]              -> cd name
-    ["mv", fname, nname]      -> mv fname nname
-    ["newFile", fname, fdata] -> newFile fname fdata
-    ["mkdir", name]           -> mkdir name 
-    ["cat", name]             -> cat name
+    ["ls"]                    -> ls                  
+    ["cd", name]              -> cd name            
+    ["mv", fname, nname]      -> mv fname nname     
+    ["newFile", fname, fdata] -> newFile fname fdata 
+    ["mkdir", name]           -> mkdir name          
+    ["cat", name]             -> cat name          
     ["pwd"]                   -> pwd
+    ["exit"]                  -> return 0
     [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
@@ -143,7 +144,8 @@ bash = do
       if (null rs) || (null (tail rs))
       then liftIO $ putStrLn "unknown operation"  >> return 0
       else fileAppend (last rs) (concatPlus ls ' ')
-  bash
+      
+  when (cmd /= "exit") bash
 
 
 main = bashFS
