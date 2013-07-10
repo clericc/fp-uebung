@@ -39,11 +39,6 @@ newFile newFileName newFileData x@(item, ctx)
       else
         return (Folder name (mkFile newFileName newFileData):items, ctx)
 
-
-
-
-
-
 --}
 -- ------------------------------------------------------------------
 -- backend operations
@@ -52,19 +47,16 @@ top :: FSItem -> FSZipper
 top x = (x, Root)
 
 up :: FSZipper -> FSZipper
-up (x, Dir n l r c) = (Folder n (l ++ [x] ++ r), c)
+up (x, Dir n l r c) = (Folder n (l ++ x:r), c)
 
 down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
-modify :: (i -> i) -> FSZipper -> FSZipper
-modify f (item, ctx) = (f item, ctx)
-
-
 isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
+
 
 mkFile :: Name -> Data -> FSItem
 mkFile = File
@@ -72,18 +64,20 @@ mkFile = File
 mkFolder :: Name -> FSItem
 mkFolder = Folder
 
+modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
+modify f (i, c) = (f i, c)
+
+
+fsConcat :: Data -> FSZipper -> IO FSZipper
+fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 
 --Concats Data to File
-(>>) :: Data -> Name -> FSZipper -> IO FSZipper
-nd >> (Folder fn fl, c) = newFile (Folder fn fl, c)
+(:->>) :: Data -> Name -> FSZipper -> IO FSZipper
+(:->>) nd n (Folder fn fl, c) = (newFile n (Folder fn fl, c)) >>= (fsConcat nd)
+(:->>) nd n (File fn d, c) = (newFile n (File d, c) >>= (fsConcat nd)
 
 
-nd >> (File fn d, c) = return (File fn (nd ++ d), c)
 
-
---Overwrites Data in File
-(>) :: Data -> Name -> FSZipper -> IO FSZipper
-nd > (File fn d, c) = return (File fn nd, c)
 
 myDisk :: FSItem
 myDisk =
