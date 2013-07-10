@@ -64,6 +64,15 @@ cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
       (Folder fn i, c) -> put (obj) >> return 0
 
 
+pwd :: FsOps ReturnCode
+pwd = do
+  z <- get    
+  liftIO (putStrLn $ buildPwd z) >> return 0
+  where
+    buildPwd (v, Root) = showName v
+    buildPwd l@(v, c) = (buildPwd (up l)) ++ "/" ++ (showName v)
+
+
 cat :: Name -> FsOps ReturnCode
 cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
@@ -125,6 +134,7 @@ bash = do
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
     ["cat", name]             -> cat name
+    ["pwd"]                   -> pwd
     [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
@@ -209,7 +219,7 @@ myDiskState  = (myDisk, Root)
 
 myDisk :: FSItem
 myDisk =
-    Folder "root"
+    Folder "/"
         [ File "hello.txt" "Hallo Welt"
         , File "fp.hs" "insert mega cool Haskell Code here"
         , Folder "pics"
