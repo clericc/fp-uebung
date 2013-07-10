@@ -138,6 +138,7 @@ bash = do
     ["cat", name]             -> cat name          
     ["pwd"]                   -> pwd
     ["exit"]                  -> return 0
+    []                        -> return 0
     [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
