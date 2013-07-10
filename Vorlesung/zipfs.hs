@@ -46,6 +46,8 @@ newFile newFileName newFileData = do
         put (Folder fname (mkFile newFileName newFileData : items), ctx)
         return 0
 
+touch name = newFile name ""
+
 
 mkdir :: Name -> FsOps ReturnCode
 mkdir name = do
@@ -112,7 +114,8 @@ mv oldName newName = do
 --}
 
 
-
+blaaa ::  (FSItem -> FsOps ReturnCode) -> FSZipper -> FsOps ReturnCode
+blaaa 
 
 
 
