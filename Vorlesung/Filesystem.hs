@@ -57,7 +57,7 @@ cd "/" = get >>= (put . upmost) >> return 0
 cd ".." = get >>= (put . up) >> return 0
 cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid destination, ignore") >> return 2
+  then liftIO (putStrLn "*** directory doesnt exist, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
@@ -68,16 +68,13 @@ cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
 pwd :: FsOps ReturnCode
 pwd = do
   z <- get
-  liftIO (putStrLn $ buildPwd z) >> return 0
-  where
-    buildPwd (v, Root) = showName v
-    buildPwd l@(v, c) = (buildPwd (up l)) ++ "/" ++ (showName v)
+  liftIO (putStrLn $ getPath z) >> return 0
 
 
 cat :: Name -> FsOps ReturnCode
 cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid filename") >> return 2
+  then liftIO (putStrLn "*** invalid filename, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
@@ -88,7 +85,7 @@ cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
 fileAppend :: Name -> Data -> FsOps ReturnCode
 fileAppend name dat = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid filename") >> return 2
+  then liftIO (putStrLn "*** invalid filename, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
@@ -121,7 +118,7 @@ applyToFolder f = do
 -- ------------------------------------------------------------------
 -- backend operations
 
-bashFS = runStateT bash myDiskState
+bashFS = runStateT bash zipFs
 
 bash :: FsOps ()
 bash = do
@@ -138,6 +135,7 @@ bash = do
     ["cat", name]             -> cat name
     ["pwd"]                   -> pwd
     ["exit"]                  -> return 0
+    ["touch", name]           -> touch name
     []                        -> return 0
     [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
@@ -189,7 +187,9 @@ rename :: Name -> FsItem -> FsItem
 rename newName (File   name content) = File   newName content
 rename newName (Folder name content) = Folder newName content
 
-
+getPath :: FsZipper -> String
+getPath (v, Root) = showName v
+getPath l@(v, c) = getPath (up l) ++ (showName v) ++ "/"
 
 -- ------------------------------------------------------------------
 -- zipper operations
@@ -218,8 +218,8 @@ modify f (i, c) = (f i, c)
 -- ------------------------------------------------------------------
 -- sample file system
 
-myDiskState :: FsZipper
-myDiskState  = (myDisk, Root)
+zipFs :: FsZipper
+zipFs  = top myDisk
 
 myDisk :: FsItem
 myDisk =
