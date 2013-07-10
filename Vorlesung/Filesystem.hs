@@ -68,10 +68,7 @@ cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
 pwd :: FsOps ReturnCode
 pwd = do
   z <- get    
-  liftIO (putStrLn $ buildPwd z) >> return 0
-  where
-    buildPwd (v, Root) = showName v
-    buildPwd l@(v, c) = (buildPwd (up l)) ++ "/" ++ (showName v)
+  liftIO (putStrLn $ buildPwd z) >> return 0    
 
 
 cat :: Name -> FsOps ReturnCode
@@ -138,6 +135,7 @@ bash = do
     ["cat", name]             -> cat name          
     ["pwd"]                   -> pwd
     ["exit"]                  -> return 0
+    ["touch", name]           -> touch name
     [dat, ">>", name]         -> fileAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
@@ -188,7 +186,9 @@ rename :: Name -> FsItem -> FsItem
 rename newName (File   name content) = File   newName content
 rename newName (Folder name content) = Folder newName content
 
-
+buildPwd :: FsZipper -> String
+buildPwd (v, Root) = showName v
+buildPwd l@(v, c) = (buildPwd (up l)) ++ (showName v) ++ "/"
 
 -- ------------------------------------------------------------------
 -- zipper operations
