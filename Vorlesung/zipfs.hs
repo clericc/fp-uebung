@@ -73,6 +73,15 @@ cd name = do
         in case obj of
           (File _ _, c) -> liftIO (putStrLn "is file") >> return 3
           (Folder fn i, c) -> put (obj) >> return 0
+          
+pwd :: FsOps ReturnCode
+pwd = do
+  z <- get    
+  liftIO (putStrLn $ buildPwd z) >> return 0
+  where
+    buildPwd (v, Root) = showName v
+    buildPwd l@(v, c) = (buildPwd (up l)) ++ "\\" ++ (showName v)
+
 
 
 cat :: Name -> FsOps ReturnCode
@@ -157,6 +166,7 @@ bash = do
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
     ["cat", name]             -> cat name
+    ["pwd"]                   -> pwd
     [dat, ">>", name]         -> fsAppend name dat
     [dat, ">", name]          -> newFile name dat
     _                         ->
