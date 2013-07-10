@@ -4,7 +4,7 @@
 
 module Main where
 
-import Control.Monad.State
+import Control.Monad.State.Lazy hiding ( modify )
 
 -- ------------------------------------------------------------------
 -- syntactic domains
@@ -57,6 +57,7 @@ mkdir name = do
       then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
       
+
 cd :: Name -> FsOps ReturnCode
 cd "/" = get >>= (put . upmost) >> return 0
 cd ".." = get >>= (put . up) >> return 0
@@ -108,18 +109,23 @@ ls :: FsOps ReturnCode
 ls = do
   (currItem , ctx) <- get
   case currItem of
-    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (File _ _)       -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
     (Folder _ items) ->
       mapM_ (liftIO . putStrLn . showName) items >> return 0
 
-{-
-rename :: Name -> Name -> FsOps ReturnCode
-rename oldName newName = do
+--{-
+mv :: Name -> Name -> FsOps ReturnCode
+mv oldName newName = do
   (currItem , ctx) <- get
   case currItem of
-    (File name content) -> "*** focus on file, do nothing" >> return 1
-    (Folder name items) ->
+    (File      _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (Folder name _) -> 
+      let newContent = (up . modify (rename newName) . down oldName) (currItem, ctx)
+      in  put newContent >> return 0
+
 --}
+
+
 
 
 
@@ -147,7 +153,7 @@ bash = do
   case words cmd of
     ["ls"]                    -> ls
     ["cd", name]              -> cd name
---    ["rename", fname, nname]  -> rename fname nname
+    ["mv", fname, nname]      -> mv fname nname
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
     ["cat", name]             -> cat name
@@ -186,7 +192,7 @@ mkFolder :: Name -> FSItem
 mkFolder name = Folder name []
 
 fsattach :: Data -> FSZipper -> FSZipper
-fsattach d = modify' (\(File fn fd) -> File fn (fd ++ d))
+fsattach d = modify (\(File fn fd) -> File fn (fd ++ d))
 
 isName :: Name -> FSItem -> Bool
 isName n (Folder fn xs) = n == fn
@@ -195,6 +201,10 @@ isName n (File fn d) = n == fn
 showName :: FSItem -> String
 showName (Folder name _) = name
 showName (File   name _) = name
+
+rename :: Name -> FSItem -> FSItem
+rename newName (File   name content) = File   newName content
+rename newName (Folder name content) = Folder newName content
 
 --}
 -- ------------------------------------------------------------------
@@ -218,8 +228,8 @@ down n (Folder fn fl, c) = (x, Dir fn ls rs c)
 
 
 --Uses a given function to modify the focused element
-modify' :: (FSItem -> FSItem) -> FSZipper -> FSZipper
-modify' f (i, c) = (f i, c)
+modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
+modify f (i, c) = (f i, c)
 
 -- ------------------------------------------------------------------
 -- sample file system
