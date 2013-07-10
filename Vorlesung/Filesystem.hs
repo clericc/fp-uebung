@@ -57,7 +57,7 @@ cd "/" = get >>= (put . upmost) >> return 0
 cd ".." = get >>= (put . up) >> return 0
 cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid destination, ignore") >> return 2
+  then liftIO (putStrLn "*** directory doesnt exist, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
@@ -74,7 +74,7 @@ pwd = do
 cat :: Name -> FsOps ReturnCode
 cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid filename") >> return 2
+  then liftIO (putStrLn "*** invalid filename, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
@@ -85,7 +85,7 @@ cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
 fileAppend :: Name -> Data -> FsOps ReturnCode
 fileAppend name dat = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
   if not . fselem name $ content
-  then liftIO (putStrLn "invalid filename") >> return 2
+  then liftIO (putStrLn "*** invalid filename, do nothing") >> return 2
   else
     let obj = down name zipper
     in case obj of
