@@ -26,7 +26,7 @@ type FsZipper = (FsItem, FsCtx)
 
 
 type FsOps a = StateT FsZipper IO a
- 
+
 -- ------------------------------------------------------------------
 -- command line operations
 
@@ -50,7 +50,7 @@ mkdir name = applyToFolder $ \ ( (Folder fname fcontent) , ctx) ->
   if name `fselem` fcontent
   then liftIO (putStrLn "*** name exists already, do nothing") >> return 2
   else put ( Folder fname (mkFolder name : fcontent) , ctx) >> return 0
-      
+
 
 cd :: Name -> FsOps ReturnCode
 cd "/" = get >>= (put . upmost) >> return 0
@@ -67,7 +67,7 @@ cd name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
 
 pwd :: FsOps ReturnCode
 pwd = do
-  z <- get    
+  z <- get
   liftIO (putStrLn $ buildPwd z) >> return 0
   where
     buildPwd (v, Root) = showName v
@@ -83,7 +83,7 @@ cat name = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
     in case obj of
       (File n d, c) -> liftIO (putStrLn d) >> return 0
       (Folder fn i, c) -> liftIO (putStrLn ("cat: " ++ fn ++ "/ is directory")) >> return 3
-          
+
 
 fileAppend :: Name -> Data -> FsOps ReturnCode
 fileAppend name dat = applyToFolder $ \ zipper@( (Folder fname content) , ctx) ->
@@ -102,7 +102,7 @@ ls = applyToFolder $ \ ( (Folder name content) , ctx) ->
 
 
 mv :: Name -> Name -> FsOps ReturnCode
-mv oldName newName = applyToFolder $ \ (currItem, ctx) ->  
+mv oldName newName = applyToFolder $ \ (currItem, ctx) ->
   let newContent = (up . modify (rename newName) . down oldName) (currItem, ctx)
   in  put newContent >> return 0
 
@@ -124,18 +124,18 @@ applyToFolder f = do
 bashFS = runStateT bash myDiskState
 
 bash :: FsOps ()
-bash = do  
+bash = do
   (currItem, ctx) <- get
   liftIO . putStr . (++ " >> ") . showName $ currItem
   liftIO $ hFlush stdout
   cmd <- liftIO getLine
   case words cmd of
-    ["ls"]                    -> ls                  
-    ["cd", name]              -> cd name            
-    ["mv", fname, nname]      -> mv fname nname     
-    ["newFile", fname, fdata] -> newFile fname fdata 
-    ["mkdir", name]           -> mkdir name          
-    ["cat", name]             -> cat name          
+    ["ls"]                    -> ls
+    ["cd", name]              -> cd name
+    ["mv", fname, nname]      -> mv fname nname
+    ["newFile", fname, fdata] -> newFile fname fdata
+    ["mkdir", name]           -> mkdir name
+    ["cat", name]             -> cat name
     ["pwd"]                   -> pwd
     ["exit"]                  -> return 0
     []                        -> return 0
@@ -143,11 +143,11 @@ bash = do
     [dat, ">", name]          -> newFile name dat
     _                         ->
       let (ls, rs) = break (">>"==) $ words cmd
-      in 
+      in
       if (null rs) || (null (tail rs))
       then liftIO $ putStrLn "unknown operation"  >> return 0
       else fileAppend (last rs) (concatPlus ls ' ')
-      
+
   when (cmd /= "exit") bash
 
 
@@ -208,7 +208,6 @@ upmost z = upmost (up z)
 down :: Name -> FsZipper -> FsZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
-
 
 --Uses a given function to modify the focused element
 modify :: (FsItem -> FsItem) -> FsZipper -> FsZipper
