@@ -98,13 +98,13 @@ ls = do
     (Folder _ items) ->
       mapM_ (liftIO . putStrLn . showName) items >> return 0
 
-{-
+--{-
 rename :: Name -> Name -> FsOps ReturnCode
 rename oldName newName = do
   (currItem , ctx) <- get
   case currItem of
     (File name content) -> "*** focus on file, do nothing" >> return 1
-    (Folder name items) ->
+    (Folder name items) -> put (  , ctx )
 --}
 
 
