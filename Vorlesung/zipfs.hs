@@ -32,16 +32,26 @@ newFile newFileName newFileData x@(item, ctx)
       putStrLn "focus is on file, do nothing"
       return x
     (Folder name items) ->
-      if newFileName `elem` items  -- Name schon vorhanden?
+      if newFileName `fselem` items  -- Name schon vorhanden?
       then do
         putStrLn "file or folder exists already, do nothing"
         return x
       else
-        return (Folder name (mkFile newFileName newFileData):items, ctx)
+        return (Folder name ((File newFileName newFileData):items), ctx)
 
 --}
 -- ------------------------------------------------------------------
 -- backend operations
+
+fselem :: Name -> [FSItem] -> Bool
+fselem name [] = False
+fselem name (x:xs) = case x of
+  (File   n _) -> n == name || fselem name xs
+  (Folder n _) -> n == name || fselem name xs
+
+{-
+
+
 
 top :: FSItem -> FSZipper
 top x = (x, Root)
@@ -76,8 +86,9 @@ fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 (:->>) nd n (Folder fn fl, c) = (newFile n (Folder fn fl, c)) >>= (fsConcat nd)
 (:->>) nd n (File fn d, c) = (newFile n (File d, c) >>= (fsConcat nd)
 
-
-
+--}
+-- ------------------------------------------------------------------
+-- sample file system
 
 myDisk :: FSItem
 myDisk =
