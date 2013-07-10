@@ -58,14 +58,37 @@ mkdir name = do
       else put ( Folder fname (mkFolder name : items) , ctx) >> return 0
       
 cd :: Name -> FsOps ReturnCode
+cd "/" = get >>= (put . upmost) >> return 0
+cd ".." = get >>= (put . up) >> return 0
 cd name = do
   l@(currItem, ctx) <- get
   case currItem of
-    (File _ _) -> liftIO (putStrLn "focus on file, ignore") >> return 1
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
     (Folder fname items) ->
-      if name `fselem` items
-      then put ( down name l ) >> return 0
-      else liftIO (putStrLn "invalid destination, ignore") >> return 2
+      if not $ name `fselem` items
+      then liftIO (putStrLn "invalid destination, ignore") >> return 2
+      else
+        let obj = down name l
+        in case obj of
+          (File _ _, c) -> liftIO (putStrLn "is file") >> return 3
+          (Folder fn i, c) -> put (obj) >> return 0
+
+
+cat :: Name -> FsOps ReturnCode
+cat name = do
+  l@(currItem, ctx) <- get
+  case currItem of
+    (File _ _) -> liftIO (putStrLn "*** focus on file, do nothing") >> return 1
+    (Folder fname items) ->
+      if not $ name `fselem` items
+      then liftIO (putStrLn "invalid filename") >> return 2
+      else
+        let obj = down name l
+        in case obj of
+          (File n d, c) -> liftIO (putStrLn d) >> return 0
+          (Folder fn i, c) -> liftIO (putStrLn ("cat: " ++ fn ++ "/ is directory")) >> return 3
+
+
 
 ls :: FsOps ReturnCode
 ls = do
@@ -134,6 +157,11 @@ top x = (x, Root)
 
 up :: FSZipper -> FSZipper
 up (x, Dir n l r c) = (Folder n (l ++ x:r), c)
+up z = z
+
+upmost :: FSZipper -> FSZipper
+upmost (n, Root) = (n, Root)
+upmost z = upmost (up z)
 
 down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
