@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 
-module Filesystem where
+module Main where
 
 import Control.Monad.State
 
@@ -25,7 +25,6 @@ type FSZipper = (FSItem, FSCtx)
 
 
 type FsOps a = StateT FSZipper IO a
-
  
 -- ------------------------------------------------------------------
 -- command line operations
@@ -76,6 +75,15 @@ ls = do
     (Folder _ items) ->
       mapM_ (liftIO . putStrLn . showName) items >> return 0
 
+{-
+rename :: Name -> Name -> FsOps ReturnCode
+rename oldName newName = do
+  (currItem , ctx) <- get
+  case currItem of
+    (File name content) -> 
+-}
+
+
 
 fsConcat :: Data -> FSZipper -> IO FSZipper
 fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
@@ -88,6 +96,28 @@ fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 --(:->>) nd n (File fn d, c) = (newFile n "" (File fn d, c)) >>= (fsConcat nd)
 
 --}
+
+-- ------------------------------------------------------------------
+-- backend operations
+
+bashFS = runStateT bash myDiskState
+
+bash :: FsOps ()
+bash = do
+  cmd <- liftIO getLine
+  case words cmd of
+    ["ls"]                    -> ls
+    ["cd", name]              -> cd name
+--    ["rename", fname, nname]  -> rename fname nname
+    ["newFile", fname, fdata] -> newFile fname fdata
+    ["mkdir", name]           -> mkdir name 
+    _                         -> liftIO $ putStrLn "unknown operation"  >> return 0
+  bash
+
+
+main = bashFS
+
+
 -- ------------------------------------------------------------------
 -- backend operations
 --{-
