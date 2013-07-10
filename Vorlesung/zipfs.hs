@@ -109,8 +109,7 @@ rename oldName newName = do
 
 
 
-fsConcat :: Data -> FSZipper -> IO FSZipper
-fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
+
 
 
 --Concats Data to File
@@ -137,6 +136,8 @@ bash = do
 --    ["rename", fname, nname]  -> rename fname nname
     ["newFile", fname, fdata] -> newFile fname fdata
     ["mkdir", name]           -> mkdir name 
+    ["cat", name]             -> cat name
+    [
     _                         -> liftIO $ putStrLn "unknown operation"  >> return 0
   bash
 
@@ -154,6 +155,27 @@ fselem name (x:xs) = case x of
   (File   n _) -> n == name || fselem name xs
   (Folder n _) -> n == name || fselem name xs
 
+
+mkFile :: Name -> Data -> FSItem
+mkFile = File
+
+
+mkFolder :: Name -> FSItem
+mkFolder name = Folder name []
+
+isName :: Name -> FSItem -> Bool
+isName n (Folder fn xs) = n == fn
+isName n (File fn d) = n == fn
+
+showName :: FSItem -> String
+showName (Folder name _) = name
+showName (File   name _) = name
+
+--}
+-- ------------------------------------------------------------------
+-- zipper operations
+
+
 top :: FSItem -> FSZipper
 top x = (x, Root)
 
@@ -169,25 +191,12 @@ down :: Name -> FSZipper -> FSZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
-isName :: Name -> FSItem -> Bool
-isName n (Folder fn xs) = n == fn
-isName n (File fn d) = n == fn
 
-showName :: FSItem -> String
-showName (Folder name _) = name
-showName (File   name _) = name
 
-mkFile :: Name -> Data -> FSItem
-mkFile = File
-
-mkFolder :: Name -> FSItem
-mkFolder name = Folder name []
-
+--Uses a given function to modify the focused element
 modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
 modify f (i, c) = (f i, c)
 
-
---}
 -- ------------------------------------------------------------------
 -- sample file system
 
