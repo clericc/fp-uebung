@@ -18,7 +18,7 @@ type FSZipper = (FSItem, FSCtx)
 -- command line operations
 --{-
 
-newfile :: Name -> Data -> FSZipper -> IO FSZipper
+newfile :: Name -> FSZipper -> IO FSZipper
 newfile newFileName x@(item, ctx) = case item of
     (File _ _) -> do
         putStrLn "focus is on file, do nothing"
@@ -60,7 +60,7 @@ fsConcat nd (File fn d, c) = return (File fn (d ++ nd), c)
 --Concats Data to File
 (>>) :: Data -> Name -> FSZipper -> IO FSZipper
 (>>) nd n (Folder fn fl, c) = (newfile n (Folder fn fl, c)) >>= (fsConcat nd)
-(>>) nd n (File fn d, c) = (newfile n (File d, c) >>= (fsConcat nd)
+(>>) nd n (File fn d, c) = (newfile n (File d, c)) >>= (fsConcat nd)
 
 --(>>) nd = (=<<) (concat nd)
 
