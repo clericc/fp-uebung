@@ -5,6 +5,7 @@
 module Main where
 
 import Control.Monad.State.Lazy hiding ( modify )
+import System.IO
 
 -- ------------------------------------------------------------------
 -- syntactic domains
@@ -13,18 +14,18 @@ type Name = String
 type Data = String
 type ReturnCode = Int
 
-data FSItem = File Name Data
-            | Folder Name [FSItem]
+data FsItem = File Name Data
+            | Folder Name [FsItem]
               deriving Show
 
-data FSCtx = Root
-            | Dir Name [FSItem] [FSItem] FSCtx
+data FsCtx = Root
+            | Dir Name [FsItem] [FsItem] FsCtx
               deriving Show
 
-type FSZipper = (FSItem, FSCtx)
+type FsZipper = (FsItem, FsCtx)
 
 
-type FsOps a = StateT FSZipper IO a
+type FsOps a = StateT FsZipper IO a
  
 -- ------------------------------------------------------------------
 -- command line operations
@@ -108,7 +109,7 @@ mv oldName newName = applyToFolder $ \ (currItem, ctx) ->
 
 -- provides the guarantee to work on a Folder. If the Zipper focus is on a
 -- file, throw an error message and continue as if nothing happened
-applyToFolder ::  (FSZipper -> FsOps ReturnCode) -> FsOps ReturnCode
+applyToFolder ::  (FsZipper -> FsOps ReturnCode) -> FsOps ReturnCode
 applyToFolder f = do
   zipper@(currItem , ctx) <- get
   case currItem of
@@ -126,6 +127,7 @@ bash :: FsOps ()
 bash = do  
   (currItem, ctx) <- get
   liftIO . putStr . (++ " >> ") . showName $ currItem
+  liftIO $ hFlush stdout
   cmd <- liftIO getLine
   case words cmd of
     ["ls"]                    -> ls                  
@@ -159,30 +161,30 @@ concatPlus :: [[a]] -> a -> [a]
 concatPlus [x] v = x
 concatPlus (x:xs) v = x ++ [v] ++ (concatPlus xs v)
 
-fselem :: Name -> [FSItem] -> Bool
+fselem :: Name -> [FsItem] -> Bool
 fselem name [] = False
 fselem name (x:xs) = case x of
   (File   n _) -> n == name || fselem name xs
   (Folder n _) -> n == name || fselem name xs
 
-mkFile :: Name -> Data -> FSItem
+mkFile :: Name -> Data -> FsItem
 mkFile = File
 
-mkFolder :: Name -> FSItem
+mkFolder :: Name -> FsItem
 mkFolder name = Folder name []
 
-fsattach :: Data -> FSZipper -> FSZipper
+fsattach :: Data -> FsZipper -> FsZipper
 fsattach d = modify (\(File fn fd) -> File fn (fd ++ d))
 
-isName :: Name -> FSItem -> Bool
+isName :: Name -> FsItem -> Bool
 isName n (Folder fn xs) = n == fn
 isName n (File fn d) = n == fn
 
-showName :: FSItem -> String
+showName :: FsItem -> String
 showName (Folder name _) = name
 showName (File   name _) = name
 
-rename :: Name -> FSItem -> FSItem
+rename :: Name -> FsItem -> FsItem
 rename newName (File   name content) = File   newName content
 rename newName (Folder name content) = Folder newName content
 
@@ -191,24 +193,24 @@ rename newName (Folder name content) = Folder newName content
 -- ------------------------------------------------------------------
 -- zipper operations
 
-top :: FSItem -> FSZipper
+top :: FsItem -> FsZipper
 top x = (x, Root)
 
-up :: FSZipper -> FSZipper
+up :: FsZipper -> FsZipper
 up (x, Dir n l r c) = (Folder n (l ++ x:r), c)
 up z = z
 
-upmost :: FSZipper -> FSZipper
+upmost :: FsZipper -> FsZipper
 upmost (n, Root) = (n, Root)
 upmost z = upmost (up z)
 
-down :: Name -> FSZipper -> FSZipper
+down :: Name -> FsZipper -> FsZipper
 down n (Folder fn fl, c) = (x, Dir fn ls rs c)
   where (ls, x:rs) = break (isName n) fl
 
 
 --Uses a given function to modify the focused element
-modify :: (FSItem -> FSItem) -> FSZipper -> FSZipper
+modify :: (FsItem -> FsItem) -> FsZipper -> FsZipper
 modify f (i, c) = (f i, c)
 
 
@@ -216,10 +218,10 @@ modify f (i, c) = (f i, c)
 -- ------------------------------------------------------------------
 -- sample file system
 
-myDiskState :: FSZipper
+myDiskState :: FsZipper
 myDiskState  = (myDisk, Root)
 
-myDisk :: FSItem
+myDisk :: FsItem
 myDisk =
     Folder "/"
         [ File "hello.txt" "Hallo Welt"
