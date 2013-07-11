@@ -8,7 +8,7 @@ import Control.Monad.State.Lazy hiding ( modify )
 import System.IO
 
 -- ------------------------------------------------------------------
--- syntactic domains
+-- types
 
 type Name = String
 type Data = String
@@ -116,7 +116,7 @@ applyToFolder f = do
 
 
 -- ------------------------------------------------------------------
--- backend operations
+-- shell parser
 
 bashFS = runStateT bash zipFs
 
